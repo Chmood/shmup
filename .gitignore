@@ -1,11 +1,18 @@
-# Build and Release Folders
-bin/
-bin-debug/
-bin-release/
+node_modules/
+src/bower_components/phaser-official/.bower.json
+src/bower_components/phaser-official/CHANGELOG.md
+src/bower_components/phaser-official/CONTRIBUTING.md
+src/bower_components/phaser-official/Gruntfile.js
+src/bower_components/phaser-official/README.md
+src/bower_components/phaser-official/bower.json
+src/bower_components/phaser-official/docs/
+src/bower_components/phaser-official/filters/
+src/bower_components/phaser-official/license.txt
+src/bower_components/phaser-official/package.json
+src/bower_components/phaser-official/phaser-logo-small.png
+src/bower_components/phaser-official/resources/
+src/bower_components/phaser-official/src/
+src/bower_components/phaser-official/tasks/
+src/bower_components/phaser-official/typescript/
 
-# Other files and folders
-.settings/
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
