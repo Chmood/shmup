@@ -74,7 +74,7 @@ foo = - 800;
 
 		// Ugly hack to skip the last spritesheet row (4 instead of 3)
 		var fakeClass = this.bonusClass;
-		if (fakeClass === 3) fakeClass = 4;
+		if (fakeClass === 3) { fakeClass = 4; }
 
 		var offset = fakeClass * 3;
 
@@ -157,16 +157,19 @@ foo = - 800;
 	};
 
 	Mob.prototype.blink = function () {
-		this.isDamaged = true;
 
+		this.isDamaged = true;
 		this.damageBlinkLast = CONFIG.BLINK_DAMAGE_TIME;
 	};
 
 	Mob.prototype.revive = function () {
+
+		// replenish health (dunno why, but it's always set to 1 when calling a dead sprite from a pool)
 		this.health = this.maxHealth;
 	};
 
 	Mob.prototype.die = function () {
+
 		this.kill();
 	};
 
@@ -183,8 +186,8 @@ foo = - 800;
 		// Call parent constructor
 		Mob.call(this, state, image);
 
-		// this.shotDelay = 100;
-		this.nextShotAt = this.state.rnd.integerInRange(0, 3000);
+		this.shootDelay = 1000;
+		this.speed = 100;
 	}
 
 	Enemy.prototype = Object.create(Mob.prototype);
@@ -207,7 +210,7 @@ foo = - 800;
 		bullet.reset(this.x, this.y);
 		this.state.physics.arcade.moveToObject(bullet, this.state.player, 100 * CONFIG.PIXEL_RATIO);
 
-		this.nextShotAt = this.state.time.now + this.state.rnd.integerInRange(2000, 3000);
+		this.nextShotAt = this.state.time.now + this.shootDelay;
 	};
 
 	Enemy.prototype.die = function () {
@@ -218,6 +221,20 @@ foo = - 800;
 		if (this.state.rnd.integerInRange(0, 100) < 20) {
 			this.loot();
 		}
+	};
+
+	Enemy.prototype.revive = function () {
+
+		// spawn at a random location top of the screen
+		this.reset( this.game.rnd.between(16, CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO - 16), - 32);
+
+		// Call the parent revive function
+		Mob.prototype.revive.call(this);
+
+		// also randomize the speed
+		this.body.velocity.y = this.speed * CONFIG.PIXEL_RATIO;
+
+		this.nextShotAt = this.state.rnd.integerInRange(0, this.shootDelay);
 	};
 
 	Enemy.prototype.loot = function () {
@@ -242,6 +259,8 @@ foo = - 800;
 		// Call parent constructor
 		Enemy.call(this, state, 'mob_plane');
 
+		this.speed = 120;
+		this.shootDelay = 5000;
 		this.maxHealth = 30;
 		this.planeClass = state.rnd.integerInRange(0, 7);
 
@@ -265,7 +284,7 @@ foo = - 800;
 	/************************************************************************************************
 	 * VESSEL CLASS
 	 * 
-	 * A specific type of Enemy
+	 * A specific type of (big) Enemy
 	 *
 	 ************************************************************************************************/
 
@@ -274,6 +293,8 @@ foo = - 800;
 		// Call parent constructor
 		Enemy.call(this, state, 'mob_vessel_1');
 
+		this.speed = 90;
+		this.shootDelay = 500;
 		this.maxHealth = 100;
 
 		this.animations.add('idle', [0], 5, true);
@@ -284,6 +305,36 @@ foo = - 800;
 	Vessel.prototype.constructor = Vessel;
 
 	Vessel.prototype.update = function () {
+
+		// Call the parent update function
+		Enemy.prototype.update.call(this);
+	};
+
+
+	/************************************************************************************************
+	 * FLAGSHIP CLASS
+	 * 
+	 * A specific type of (huge) Enemy
+	 *
+	 ************************************************************************************************/
+
+	function Flagship(state) {
+
+		// Call parent constructor
+		Enemy.call(this, state, 'mob_flagship_1');
+
+		this.speed = 75;
+		this.shootDelay = 500;
+		this.maxHealth = 500;
+
+		this.animations.add('idle', [0], 5, true);
+		this.play('idle');
+	}
+
+	Flagship.prototype = Object.create(Enemy.prototype);
+	Flagship.prototype.constructor = Flagship;
+
+	Flagship.prototype.update = function () {
 
 		// Call the parent update function
 		Enemy.prototype.update.call(this);
@@ -307,6 +358,7 @@ foo = - 800;
 
 		this.playerClass = this.game.rnd.between(1, 4);
 		this.playerStats = CONFIG.CLASS_STATS[this.playerClass - 1];
+		this.classStats = this.playerStats;
 
 		// Phaser.Sprite.call(this, this.game, 0, 0, 'player_' + this.playerClass);
 		Mob.call(this, state, 'player_' + this.playerClass);
@@ -376,7 +428,7 @@ foo = - 800;
 		this.speed = this.playerStats.speed * CONFIG.PIXEL_RATIO;
 		this.accel = this.speed * this.playerStats.accel;
 		this.strength = this.playerStats.strength;
-		this.shotDelay = 1000 / this.playerStats.rate;
+		this.shootDelay = 1000 / this.playerStats.rate;
 	};
 
 	Player.prototype.updateInputs = function () {
@@ -488,7 +540,7 @@ foo = - 800;
 				return;
 			}
 
-			this.nextShotAt = this.game.time.now + this.shotDelay;
+			this.nextShotAt = this.game.time.now + this.shootDelay;
 
 			var bullet = this.bulletPool.getFirstExists(false);
 			bullet.reset(this.x, this.y - 20);
@@ -527,6 +579,18 @@ foo = - 800;
 	};
 
 	Player.prototype.collectUpgrade = function(upgrade) {
+
+		// TODO : relative upgrades
+		// var nSteps = 7; // Number of upgrades needed for max level
+		// var maxFactor = 2; // How many times the base (read class) level
+
+		// var nParts = 0;
+
+		// for (var i = 1; i < nSteps; i++) {
+		// 	nParts += i;
+		// };
+
+		// var strengthPart = this.classStats.strength * (maxFactor - 1);
 
 		if (upgrade === 0) {
 			this.playerStats.strength += 10;
@@ -602,12 +666,22 @@ foo = - 800;
 				mob.alive = false;
 			}
 
-			// Widows
+			// Vessels
 			this.mobPools[1] = this.add.group();
 
 			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
 				mob = new Vessel(this);
 				this.mobPools[1].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
+			// Flagships
+			this.mobPools[2] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Flagship(this);
+				this.mobPools[2].add(mob);
 				mob.exists = false; 
 				mob.alive = false;
 			}
@@ -634,6 +708,9 @@ foo = - 800;
 
 			this.nextEnemyAt[1] = 0;
 			this.enemyDelay[1] = 5000;
+
+			this.nextEnemyAt[2] = 0;
+			this.enemyDelay[2] = 30000;
 
 
 			// MOB BULLETS
@@ -916,15 +993,10 @@ foo = - 800;
 			for (var i = 0; i < this.mobPools.length; i++) {
 
 				if (this.nextEnemyAt[i] < this.time.now && this.mobPools[i].countDead() > 0) {
-					this.nextEnemyAt[i] = this.time.now + this.enemyDelay[i];
-					var enemy = this.mobPools[i].getFirstExists(false);
 
-					// spawn at a random location top of the screen
-					enemy.reset( this.game.rnd.between(16, CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO - 16), - 32);
-enemy.health = 100;
-					// also randomize the speed
-					enemy.body.velocity.y = this.rnd.integerInRange(80, 120) * CONFIG.PIXEL_RATIO;
-					// replenish health (dunno why, but it's set to 1 whatever i do)
+					this.nextEnemyAt[i] = this.time.now + this.enemyDelay[i];
+
+					var enemy = this.mobPools[i].getFirstExists(false);
 					enemy.revive();
 				}
 			}

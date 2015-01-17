@@ -30,6 +30,7 @@
 
       this.load.spritesheet('mob_plane', 'assets/mob_planes.png', 32, 32);
       this.load.spritesheet('mob_vessel_1', 'assets/mob_vessel_1.png', 37, 28);
+      this.load.spritesheet('mob_flagship_1', 'assets/mob_flagship_1.png', 93, 80);
 
       this.load.spritesheet('bonus_cube', 'assets/cubes.png', 24, 24);
       this.load.spritesheet('bonus_coin', 'assets/coins.png', 12, 12);
