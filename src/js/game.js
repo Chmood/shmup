@@ -48,14 +48,8 @@ foo = - 800;
 		// Call parent constructor
 		Actor.call(this, state, image);
 	
-		// Mob properties
 		this.alive = true;
-		this.bonusClass = state.rnd.integerInRange(0, 6);
-
-		var offset = this.bonusClass * 3;
-
-		this.animations.add('idle', [0 + offset, 1 + offset, 2 + offset, 1 + offset], 15, true);
-		this.play('idle');
+		this.updateClass();
 	}
 
 	Collectible.prototype = Object.create(Actor.prototype);
@@ -73,6 +67,21 @@ foo = - 800;
 		}
 
 	};
+
+	Collectible.prototype.updateClass = function () {
+
+		this.bonusClass = this.state.rnd.integerInRange(0, 3);
+
+		// Ugly hack to skip the last spritesheet row (4 instead of 3)
+		var fakeClass = this.bonusClass;
+		if (fakeClass === 3) fakeClass = 4;
+
+		var offset = fakeClass * 3;
+
+		this.animations.add('idle', [0 + offset, 1 + offset, 2 + offset, 1 + offset], 15, true);
+		this.play('idle');
+	};
+
 
 	/************************************************************************************************
 	 * MOB CLASS
@@ -214,6 +223,7 @@ foo = - 800;
 	Enemy.prototype.loot = function () {
 
 		var bonus = this.state.bonusPool.getFirstExists(false);
+		bonus.updateClass();
 		bonus.reset(this.x, this.y);
 		bonus.body.velocity.y = 40 * CONFIG.PIXEL_RATIO;
 		bonus.body.angularVelocity = 30;
@@ -508,13 +518,32 @@ foo = - 800;
 		if (s < 100 ) { f = 0; }
 			else if (s < 120 ) { f = 1; }
 			else if (s < 160 ) { f = 2; }
-			else if (s < 200 ) { f = 3; }
+			else { f = 3; }
 
 		this.bulletPool.forEach(function(bullet) {
 			bullet.animations.add('idle', [ f ], 5, true);
 			bullet.play('idle');
 		}, null);
 	};
+
+	Player.prototype.collectUpgrade = function(upgrade) {
+
+		if (upgrade === 0) {
+			this.playerStats.strength += 10;
+
+		} else if (upgrade === 1) {
+			this.playerStats.rate += 1;
+
+		} else if (upgrade === 2) {
+			this.playerStats.speed += 10;
+
+		} else {
+			this.playerStats.accel += 1;
+		}
+
+		this.updateStats();
+		this.updateBulletPool();
+	};	
 
 
 	
@@ -959,6 +988,8 @@ enemy.health = 100;
 
 		playerVSbonus: function (player, bonus) {
 			bonus.kill();
+			player.collectUpgrade(bonus.bonusClass);
+
 			this.updateGUI();
 		},
 
