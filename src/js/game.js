@@ -188,6 +188,8 @@ foo = - 800;
 
 		this.shootDelay = 1000;
 		this.speed = 100;
+		this.points = 100;
+		this.bulletSpeed = 100;
 	}
 
 	Enemy.prototype = Object.create(Mob.prototype);
@@ -208,7 +210,7 @@ foo = - 800;
 
 		var bullet = this.state.bulletPoolMob.getFirstExists(false);
 		bullet.reset(this.x, this.y);
-		this.state.physics.arcade.moveToObject(bullet, this.state.player, 100 * CONFIG.PIXEL_RATIO);
+		this.state.physics.arcade.moveToObject(bullet, this.state.player, this.bulletSpeed * CONFIG.PIXEL_RATIO);
 
 		this.nextShotAt = this.state.time.now + this.shootDelay;
 	};
@@ -259,9 +261,12 @@ foo = - 800;
 		// Call parent constructor
 		Enemy.call(this, state, 'mob_plane');
 
-		this.speed = 120;
-		this.shootDelay = 5000;
 		this.maxHealth = 30;
+		this.speed = 100;
+		this.shootDelay = 5000;
+		this.bulletSpeed = 125;
+		this.points = 100;
+
 		this.planeClass = state.rnd.integerInRange(0, 7);
 
 		var offset = this.planeClass * 3;
@@ -293,9 +298,10 @@ foo = - 800;
 		// Call parent constructor
 		Enemy.call(this, state, 'mob_vessel_1');
 
-		this.speed = 90;
-		this.shootDelay = 500;
 		this.maxHealth = 100;
+		this.speed = 80;
+		this.shootDelay = 500;
+		this.points = 500;
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -323,9 +329,10 @@ foo = - 800;
 		// Call parent constructor
 		Enemy.call(this, state, 'mob_flagship_1');
 
-		this.speed = 75;
+		this.maxHealth = 750;
+		this.speed = 60;
 		this.shootDelay = 500;
-		this.maxHealth = 500;
+		this.points = 2000;
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -700,17 +707,19 @@ foo = - 800;
 
 			//			this.mobPool.createMultiple(CONFIG.MOBPOOL_SIZE, 'mob_plane_1');
 			
-			this.nextEnemyAt = [];
 			this.enemyDelay = [];
+			this.nextEnemyAt = [];
 
-			this.nextEnemyAt[0] = 0;
 			this.enemyDelay[0] = 1000;
+			// this.nextEnemyAt[0] = this.enemyDelay[0];
 
-			this.nextEnemyAt[1] = 0;
 			this.enemyDelay[1] = 5000;
+			// this.nextEnemyAt[1] = 0;
 
-			this.nextEnemyAt[2] = 0;
 			this.enemyDelay[2] = 30000;
+			// this.nextEnemyAt[2] = 0;
+
+			this.nextEnemyAt = this.enemyDelay.slice();
 
 
 			// MOB BULLETS
@@ -734,9 +743,13 @@ foo = - 800;
 
 			// GUI
 
-			this.guiText1 = this.add.bitmapText(0, 0, 'minecraftia', '');
-			this.guiText1.scale.setTo(0.5, 0.5); 
+			this.guiText1 = this.add.bitmapText(0, -5 * CONFIG.PIXEL_RATIO, 'minecraftia', '000');
+			this.guiText1.scale.setTo(CONFIG.PIXEL_RATIO / 2, CONFIG.PIXEL_RATIO / 2); 
 			this.guiText1.fixedToCamera = true;
+
+			this.guiText2 = this.add.bitmapText(0, 32, 'minecraftia', '');
+			this.guiText2.scale.setTo(CONFIG.PIXEL_RATIO / 4, CONFIG.PIXEL_RATIO / 4); 
+			this.guiText2.fixedToCamera = true;
 
 			this.updateGUI();
 		},
@@ -1028,7 +1041,7 @@ foo = - 800;
 				mob.die();
 				this.explode(mob);
 
-				this.score += 100;
+				this.score += mob.points;
 				this.updateGUI();
 			}
 		},
@@ -1085,7 +1098,6 @@ foo = - 800;
 				life += '@';
 			}
 
-			gui += this.score + '\n';
 			gui += 'HP  ' + life + '\n';
 
 			gui += 'STR ' + this.player.playerStats.strength + '\n';
@@ -1093,7 +1105,8 @@ foo = - 800;
 			gui += 'SPD ' + this.player.playerStats.speed + '\n';
 			gui += 'ACC ' + this.player.playerStats.accel + '\n';
 
-			this.guiText1.setText(gui);
+			this.guiText1.setText(this.score);
+			this.guiText2.setText(gui);
 		},
 
 		updateBackground: function (delta) {
