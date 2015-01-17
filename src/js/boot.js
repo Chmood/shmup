@@ -4,7 +4,7 @@ var CONFIG = {
 	PIXEL_RATIO:  				2,
 
 	WORLD_WIDTH: 					16,
-	WORLD_HEIGHT: 				76,
+	WORLD_HEIGHT: 				29,
 
 	MOBPOOL_SIZE: 				25,
 	BULLETPOOL_SIZE: 			100,

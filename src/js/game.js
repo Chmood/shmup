@@ -1,8 +1,5 @@
 /*globals CONFIG */
 
-var foo = CONFIG.GAME_HEIGHT - CONFIG.WORLD_HEIGHT * 14;
-foo = - 800;
-
 (function() {
 	'use strict';
 
@@ -513,6 +510,7 @@ foo = - 800;
 	};
 
 	Player.prototype.floatH = function (delta) {
+
 		if (this.body.velocity.x > 0) {
 			this.body.velocity.x -= this.accel * delta;
 			if (this.body.velocity.x < 0) {
@@ -527,6 +525,7 @@ foo = - 800;
 	};
 
 	Player.prototype.floatV = function (delta) {
+		
 		if (this.body.velocity.y > 0) {
 			this.body.velocity.y -= this.accel * delta;
 			if (this.body.velocity.y < 0) {
@@ -756,14 +755,12 @@ foo = - 800;
 
 		createWorld: function () {
 
-			// this.game.world.width = CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO / 1,286863271;
-			// this.game.world.height = CONFIG.WORLD_HEIGHT * 28 * CONFIG.PIXEL_RATIO / 1,286863271;
 			this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
 			this.game.world.setBounds(0, 0, 24 * CONFIG.WORLD_WIDTH * CONFIG.PIXEL_RATIO, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO);
 
-			// console.log('Camera size     		: ' + this.game.camera.width + '/' + this.game.camera.height);
-			// console.log('World size      		: ' + this.world.width + '/' + this.world.height);
+			console.log('Camera size     		: ' + this.game.camera.width + '/' + this.game.camera.height);
+			console.log('World size      		: ' + this.world.width + '/' + this.world.height);
 		},
 
 		createGround: function () {
@@ -776,10 +773,11 @@ foo = - 800;
 			this.ground.fixedToCamera = false;
 			this.ground.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO);
 
-			// this.ground.resizeWorld();	// Sets world size equal to map layer. Neglects layer scaling !
-			// console.log('Ground size            : ' + this.ground.width + '/' + this.ground.height);
+			console.log('Ground size            : ' + this.ground.width + '/' + this.ground.height);
+			console.log('Ground height          : ' + CONFIG.WORLD_HEIGHT);
 			
-			this.ground.y = foo;	// DAT IZ HAAACCCKKK !!!
+			this.scrollMax = Math.round((this.ground.height - this.game.camera.height) / 28) * 28;
+			this.ground.y = - this.scrollMax;
 
 			var data = this.generateTerrain();
 
@@ -812,6 +810,8 @@ foo = - 800;
 				map[i] = [];
 				for (j = 0; j < sizeY; j++) {
 					map[i][j] = this.game.rnd.between(0, 99999);
+					map[i][j] = this.game.rnd.between(0, 60999);
+					// map[i][j] = 40000;	// Only sea
 				}
 			}
 
@@ -1116,7 +1116,7 @@ foo = - 800;
 				this.ground.y += CONFIG.GROUND_SPEED * CONFIG.PIXEL_RATIO * delta;
 
 			} else {
-				this.ground.y = foo;
+				this.ground.y = - this.scrollMax;
 			}
 		},
 
