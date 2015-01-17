@@ -296,7 +296,7 @@ foo = - 800;
 		this.game = state.game;
 
 		this.playerClass = this.game.rnd.between(1, 4);
-		this.statsClass = CONFIG.CLASS_STATS[this.playerClass - 1];
+		this.playerStats = CONFIG.CLASS_STATS[this.playerClass - 1];
 
 		// Phaser.Sprite.call(this, this.game, 0, 0, 'player_' + this.playerClass);
 		Mob.call(this, state, 'player_' + this.playerClass);
@@ -312,13 +312,11 @@ foo = - 800;
 		this.animations.add('right_full', [ 4 ], 5, true);
 		this.play('idle');
 
-		this.health = this.statsClass.health;
-		this.speed = this.statsClass.speed * CONFIG.PIXEL_RATIO;
-		this.accel = this.speed * this.statsClass.accel;
-		this.strength = this.statsClass.strength;
-		this.shotDelay = 1000 / this.statsClass.rate;
-		this.nextShotAt = 0;
+		this.health = this.playerStats.health;
 
+		this.updateStats();
+
+		this.nextShotAt = 0;
 		this.lastUpdate = 0;
 
 		this.game.add.existing(this);
@@ -361,6 +359,14 @@ foo = - 800;
 		this.updateInputs();
 		this.updateSprite();
 		this.updateBullets();
+	};
+
+	Player.prototype.updateStats = function () {
+
+		this.speed = this.playerStats.speed * CONFIG.PIXEL_RATIO;
+		this.accel = this.speed * this.playerStats.accel;
+		this.strength = this.playerStats.strength;
+		this.shotDelay = 1000 / this.playerStats.rate;
 	};
 
 	Player.prototype.updateInputs = function () {
@@ -622,14 +628,9 @@ foo = - 800;
 
 			// GUI
 
-			this.titleTxt1 = this.add.bitmapText(0, 0, 'minecraftia', '');
-			this.titleTxt2 = this.add.bitmapText(0, 16, 'minecraftia', '');
-
-			this.titleTxt1.scale.setTo(0.5, 0.5); 
-			this.titleTxt2.scale.setTo(0.5, 0.5); 
-
-			this.titleTxt1.fixedToCamera = true;
-			this.titleTxt2.fixedToCamera = true;
+			this.guiText1 = this.add.bitmapText(0, 0, 'minecraftia', '');
+			this.guiText1.scale.setTo(0.5, 0.5); 
+			this.guiText1.fixedToCamera = true;
 
 			this.updateGUI();
 		},
@@ -973,14 +974,23 @@ enemy.health = 100;
 		// MISC
 
 		updateGUI: function () {
-			this.titleTxt1.setText(this.score + '');
+
+			var gui = '';
 
 			var life = '';
 			for (var i = 0; i < Math.round(this.player.health / 20); i++) {
 				life += '@';
 			}
 
-			this.titleTxt2.setText(life);
+			gui += this.score + '\n';
+			gui += 'HP  ' + life + '\n';
+
+			gui += 'STR ' + this.player.playerStats.strength + '\n';
+			gui += 'RAT ' + this.player.playerStats.rate + '\n';
+			gui += 'SPD ' + this.player.playerStats.speed + '\n';
+			gui += 'ACC ' + this.player.playerStats.accel + '\n';
+
+			this.guiText1.setText(gui);
 		},
 
 		updateBackground: function (delta) {
