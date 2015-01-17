@@ -40,7 +40,7 @@ gulp.task('uglify', ['clean','lint'], function () {
   gulp.src(srcs)
     .pipe(concat('main.min.js'))
     .pipe(gulp.dest(paths.dist))
-    .pipe(uglify({outSourceMaps: false}))
+    .pipe(uglify({outSourceMaps: true}))
     .pipe(gulp.dest(paths.dist));
 });
 
