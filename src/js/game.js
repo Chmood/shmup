@@ -435,12 +435,17 @@
 		// Enemy.prototype.shoot.call(this);
 	};
 
-	Turret.prototype.revive = function () {
+	Turret.prototype.revive = function (i, j) {
 
 		// spawn at a random location top of the screen, aligned with ground grid
+		// this.reset(
+		// 	(this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO,
+		// 	(this.state.ground.y % (28 * CONFIG.PIXEL_RATIO)) - (28 * CONFIG.PIXEL_RATIO / 2)
+		// 	);
+
 		this.reset(
-			(this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO,
-			(this.state.ground.y % (28 * CONFIG.PIXEL_RATIO)) - (28 * CONFIG.PIXEL_RATIO / 2)
+			(i + 0.5) * 24 * CONFIG.PIXEL_RATIO,
+			((j + 0.5) - CONFIG.WORLD_SWAP_HEIGHT) * 28 * CONFIG.PIXEL_RATIO
 			);
 
 		this.body.velocity.y = this.state.scrollSpeed * CONFIG.PIXEL_RATIO;
@@ -746,9 +751,6 @@
 			this.createGround();
 			this.scrollSpeed = CONFIG.SCROLL_SPEED;
 
-			// Ugly !
-			this.ground.scrollFactorX = 0.0000125; /// WTF ??? Layer seems to have double x scroll speed
-
 			// BONUSES
 
 			this.bonusPool =  this.add.group();
@@ -778,7 +780,7 @@
 
 			// GUI
 
-			this.guiText1 = this.add.bitmapText(0, -5 * CONFIG.PIXEL_RATIO, 'minecraftia', '000');
+			this.guiText1 = this.add.bitmapText(0, -5 * CONFIG.PIXEL_RATIO, 'minecraftia', '');
 			this.guiText1.scale.setTo(CONFIG.PIXEL_RATIO / 2, CONFIG.PIXEL_RATIO / 2); 
 			this.guiText1.fixedToCamera = true;
 
@@ -818,6 +820,7 @@
 			this.ground = this.map.create('layer0', this.groundWidth, this.groundHeight, 24, 28);
 			this.ground.fixedToCamera = false;
 			this.ground.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO);
+			this.ground.scrollFactorX = 0.0000125; /// WTF ??? Layer seems to have double x scroll speed
 
 			console.log('Ground real size       : ' + this.ground.width + '/' + this.ground.height);
 			console.log('Ground logic size      : ' + this.groundWidth + '/' + this.groundHeight);
@@ -1157,10 +1160,6 @@
 
 			// Background
 			this.updateBackground(this.delta);
-
-			// this.camera.x = 8500;
-			//this.camera.focusOn(320, 400);
-			// this.camera.setPosition(50, 50);
 		},
 
 		updateEnemySpawn: function () {
@@ -1178,14 +1177,69 @@
 				}
 			}
 
-			for (i = 0; i < this.mobPoolsGround.length; i++) {
+			// for (i = 0; i < this.mobPoolsGround.length; i++) {
 
-				if (this.nextEnemyGroundAt[i] < this.time.now && this.mobPoolsGround[i].countDead() > 0) {
+			// 	if (this.nextEnemyGroundAt[i] < this.time.now && this.mobPoolsGround[i].countDead() > 0) {
 
-					this.nextEnemyGroundAt[i] = this.time.now + this.enemyDelayGround[i];
+			// 		this.nextEnemyGroundAt[i] = this.time.now + this.enemyDelayGround[i];
 
-					enemy = this.mobPoolsGround[i].getFirstExists(false);
-					enemy.revive();
+			// 		enemy = this.mobPoolsGround[i].getFirstExists(false);
+			// 		enemy.revive();
+			// 	}
+			// }
+		},
+
+		updateEnemySpawnGround: function () {
+
+			var enemy, i, j, k, delta;
+
+			delta = CONFIG.WORLD_SWAP_HEIGHT * 28 / this.scrollSpeed;
+
+			var swapMap = [];
+
+			for (i = 0; i < CONFIG.WORLD_WIDTH; i++) {
+				swapMap[i] = [];
+				for(j = 0; j < CONFIG.WORLD_SWAP_HEIGHT; j++) {
+
+					var rowOffset = CONFIG.WORLD_HEIGHT - (this.groundHeight + this.scrollCounter) + j;
+
+					if (rowOffset < 0) {
+						rowOffset += CONFIG.WORLD_HEIGHT;
+					}
+
+					// this.map.putTile(this.terrainData[i][rowOffset],i,j,this.ground);
+					swapMap[i][j] = this.terrainData[i][rowOffset];
+				}
+			}
+
+
+			for (k = 0; k < this.mobPoolsGround.length; k++) {
+
+				var nEnemies = Math.round(delta * 1000 / this.enemyDelayGround[k]) + 1;
+				var tiles = [];
+
+				for (i = 0; i < CONFIG.WORLD_WIDTH; i++) {
+					for(j = 0; j < CONFIG.WORLD_SWAP_HEIGHT; j++) {
+
+						if (swapMap[i][j] === 21) {	// We are on a earth tile
+							tiles.push([i, j]);
+						}
+					}
+				}
+
+				if (tiles.length > 0 && nEnemies > 0) {
+
+					for (var n = 0; n < tiles.length && n < nEnemies; n++) {
+						var r = this.rnd.integerInRange(0, tiles.length - 1 - n);
+
+						if (this.mobPoolsGround[k].countDead() > 0) {
+
+							enemy = this.mobPoolsGround[k].getFirstExists(false);
+							enemy.revive(tiles[r][0], tiles[r][1]);
+
+							tiles.remove(r);
+						}
+					}
 				}
 			}
 		},
@@ -1293,7 +1347,7 @@
 			gui += 'SPD ' + this.player.playerStats.speed + '\n';
 			gui += 'ACC ' + this.player.playerStats.accel + '\n';
 
-			this.guiText1.setText(this.score);
+			this.guiText1.setText(this.score + '');
 			this.guiText2.setText(gui);
 		},
 
@@ -1318,6 +1372,7 @@
 				}
 
 				this.drawGround();
+				this.updateEnemySpawnGround();
 
 				this.ground.y = - this.scrollMax;
 			}
@@ -1350,21 +1405,24 @@
 		render: function () {
 			// this.game.debug.body(this.player);
 
-			this.game.debug.text(
-				'ground.y : ' + Math.round(this.ground.y) + 'px | ' + 
-				this.mobPools[0].countLiving() + '/' + CONFIG.MOBPOOL_SIZE + ' mobs | ' +
-				(100 - this.bulletPoolsMob[0].countDead()) + ' mob bullets | ' +
-				(100 - this.player.bulletPool.countDead()) + ' bullets | '
-				, 
-				0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16);
+			if (CONFIG.DEBUG.bottomInfos) {
 
-			this.game.debug.text(
-				// 'player.health : ' + this.player.health + ' | ' + 
-				'Camera position : ' + this.camera.x + '/' + this.camera.y + ' | ' +
-				'SCROLL : ' + Math.round(this.ground.y % (28 * CONFIG.PIXEL_RATIO))
-				,
+				this.game.debug.text(
+					'ground.y : ' + Math.round(this.ground.y) + 'px | ' + 
+					this.mobPools[0].countLiving() + '/' + CONFIG.MOBPOOL_SIZE + ' mobs | ' +
+					(100 - this.bulletPoolsMob[0].countDead()) + ' mob bullets | ' +
+					(100 - this.player.bulletPool.countDead()) + ' bullets | '
+					, 
+					0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16);
 
-				0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16 + 16);
+				this.game.debug.text(
+					// 'player.health : ' + this.player.health + ' | ' + 
+					'Camera position : ' + this.camera.x + '/' + this.camera.y + ' | ' +
+					'SCROLL : ' + Math.round(this.ground.y % (28 * CONFIG.PIXEL_RATIO))
+					,
+
+					0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16 + 16);
+			}
 		}
 	};
 
