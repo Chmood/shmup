@@ -810,21 +810,29 @@
 				map[i] = [];
 				for (j = 0; j < sizeY; j++) {
 					map[i][j] = this.game.rnd.between(0, 99999);
-					map[i][j] = this.game.rnd.between(0, 60999);
+					// map[i][j] = this.game.rnd.between(0, 60999);
 					// map[i][j] = 40000;	// Only sea
 				}
 			}
 
 			// Average
-			// TODO BETTER
-			for (k = 0; k < 4; k++) {
+			for (k = 0; k < 3; k++) {
+
 				for (i = 0; i < sizeX -1 ; i++) {
 					for (j = 0; j < sizeY - 1; j++) {
+
 						map[i][j] = (
 							map[i  ][j  ] + 
 							map[i+1][j  ] + 
 							map[i  ][j+1] + 
 							map[i+1][j+1]
+							) / 4;
+
+						map[i][j] = (
+							map[(sizeX-1) - i    ][(sizeY-1) - j    ] + 
+							map[(sizeX-1) - i - 1][(sizeY-1) - j    ] + 
+							map[(sizeX-1) - i    ][(sizeY-1) - j - 1] + 
+							map[(sizeX-1) - i - 1][(sizeY-1) - j - 1]
 							) / 4;
 					}
 				}
