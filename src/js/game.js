@@ -1288,7 +1288,7 @@
 
 				this.scrollCounter += CONFIG.WORLD_SWAP_HEIGHT;
 
-				if (this.scrollCounter > CONFIG.WORLD_HEIGHT - this.groundHeight) {
+				if (this.scrollCounter > CONFIG.WORLD_HEIGHT) {
 					this.scrollCounter = 0;
 				}
 
@@ -1305,6 +1305,10 @@
 				for(var j = 0; j < this.groundHeight; j++) {
 
 					var rowOffset = CONFIG.WORLD_HEIGHT - (this.groundHeight + this.scrollCounter) + j;
+
+					if (rowOffset < 0) {
+						rowOffset += CONFIG.WORLD_HEIGHT;
+					}
 
 					this.map.putTile(this.terrainData[i][rowOffset],i,j,this.ground);
 				}

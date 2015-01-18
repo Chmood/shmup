@@ -4,7 +4,7 @@ var CONFIG = {
 	PIXEL_RATIO:  				2,
 
 	WORLD_WIDTH: 					16,
-	WORLD_HEIGHT: 				100,
+	WORLD_HEIGHT: 				150,
 
 	WORLD_SWAP_HEIGHT: 		8,
 
