@@ -784,27 +784,29 @@
 
 		createGround: function () {
 
-			var map = this.game.add.tilemap();
-			map.addTilesetImage('tileset_1', 'tileset_1', 24, 28, null, null, 0);
+			this.map = this.game.add.tilemap();
+			this.map.addTilesetImage('tileset_1', 'tileset_1', 24, 28, null, null, 0);
 			
 			//  Creates a new blank layer and sets the map dimensions.
-			this.ground = map.create('layer0', CONFIG.WORLD_WIDTH, CONFIG.WORLD_HEIGHT, 24, 28);
+			this.groundWidth = CONFIG.WORLD_WIDTH;
+			this.groundHeight = Math.round(CONFIG.GAME_HEIGHT / 28) + 1 + CONFIG.WORLD_SWAP_HEIGHT;
+
+			// this.ground = map.create('layer0', CONFIG.WORLD_WIDTH, CONFIG.WORLD_HEIGHT, 24, 28);
+			this.ground = this.map.create('layer0', this.groundWidth, this.groundHeight, 24, 28);
 			this.ground.fixedToCamera = false;
 			this.ground.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO);
 
-			console.log('Ground size            : ' + this.ground.width + '/' + this.ground.height);
-			console.log('Ground height          : ' + CONFIG.WORLD_HEIGHT);
+			console.log('Ground real size       : ' + this.ground.width + '/' + this.ground.height);
+			console.log('Ground logic size      : ' + this.groundWidth + '/' + this.groundHeight);
 			
-			this.scrollMax = Math.round((this.ground.height - this.game.camera.height) / 28) * 28;
+			// this.scrollMax = Math.round((this.ground.height - this.game.camera.height) / 28) * 28;
+			this.scrollMax = CONFIG.WORLD_SWAP_HEIGHT * CONFIG.PIXEL_RATIO * 28 - 1;
 			this.ground.y = - this.scrollMax;
 
-			var data = this.generateTerrain();
+			this.terrainData = this.generateTerrain();
+			this.scrollCounter = 0;
 
-			for (var i=0; i<CONFIG.WORLD_WIDTH; i++) {
-				for(var j=0; j<CONFIG.WORLD_HEIGHT; j++) {
-					map.putTile(data[i][j],i,j,this.ground);
-				}
-			}
+			this.drawGround();
 		},
 
 		generateTerrain: function () {
@@ -1013,6 +1015,46 @@
 
 			var mob, i;
 
+			// MOB BULLETS
+
+			this.bulletPoolsMob = [];
+
+			this.bulletPoolsMob[0] = this.add.group();
+			this.bulletPoolsMob[0].enableBody = true;
+			this.bulletPoolsMob[0].physicsBodyType = Phaser.Physics.ARCADE;
+			this.bulletPoolsMob[0].createMultiple(100, 'mob_bullet_1');
+			this.bulletPoolsMob[0].setAll('anchor.x', 0.5);
+			this.bulletPoolsMob[0].setAll('anchor.y', 0.5);
+			this.bulletPoolsMob[0].setAll('scale.x', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[0].setAll('scale.y', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[0].setAll('outOfBoundsKill', true);
+			this.bulletPoolsMob[0].setAll('checkWorldBounds', true);
+
+			this.bulletPoolsMob[1] = this.add.group();
+			this.bulletPoolsMob[1].enableBody = true;
+			this.bulletPoolsMob[1].physicsBodyType = Phaser.Physics.ARCADE;
+			this.bulletPoolsMob[1].createMultiple(100, 'mob_bullet_2');
+			this.bulletPoolsMob[1].setAll('anchor.x', 0.5);
+			this.bulletPoolsMob[1].setAll('anchor.y', 0.5);
+			this.bulletPoolsMob[1].setAll('scale.x', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[1].setAll('scale.y', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[1].setAll('outOfBoundsKill', true);
+			this.bulletPoolsMob[1].setAll('checkWorldBounds', true);
+
+			// GROUND ENEMIES
+
+			this.mobPoolsGround = [];
+
+			// Tuerrets
+			this.mobPoolsGround[0] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Turret(this);
+				this.mobPoolsGround[0].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
 			// FLYING ENEMIES
 
 			this.mobPools = [];
@@ -1048,20 +1090,6 @@
 			}
 
 
-			// GROUND ENEMIES
-
-			this.mobPoolsGround = [];
-
-			// Tuerrets
-			this.mobPoolsGround[0] = this.add.group();
-
-			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
-				mob = new Turret(this);
-				this.mobPoolsGround[0].add(mob);
-				mob.exists = false; 
-				mob.alive = false;
-			}
-
 			// TODO !
 			// 	createMultipleExtends(state, number, poolName, className);
 
@@ -1085,41 +1113,12 @@
 
 			this.nextEnemyAt = this.enemyDelay.slice();
 
-
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
 
 			this.enemyDelayGround[0] = 3000;
 
 			this.nextEnemyGroundAt = this.enemyDelayGround.slice();
-
-
-			// MOB BULLETS
-
-			this.bulletPoolsMob = [];
-
-			this.bulletPoolsMob[0] = this.add.group();
-			this.bulletPoolsMob[0].enableBody = true;
-			this.bulletPoolsMob[0].physicsBodyType = Phaser.Physics.ARCADE;
-			this.bulletPoolsMob[0].createMultiple(100, 'mob_bullet_1');
-			this.bulletPoolsMob[0].setAll('anchor.x', 0.5);
-			this.bulletPoolsMob[0].setAll('anchor.y', 0.5);
-			this.bulletPoolsMob[0].setAll('scale.x', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[0].setAll('scale.y', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[0].setAll('outOfBoundsKill', true);
-			this.bulletPoolsMob[0].setAll('checkWorldBounds', true);
-
-			this.bulletPoolsMob[1] = this.add.group();
-			this.bulletPoolsMob[1].enableBody = true;
-			this.bulletPoolsMob[1].physicsBodyType = Phaser.Physics.ARCADE;
-			this.bulletPoolsMob[1].createMultiple(100, 'mob_bullet_2');
-			this.bulletPoolsMob[1].setAll('anchor.x', 0.5);
-			this.bulletPoolsMob[1].setAll('anchor.y', 0.5);
-			this.bulletPoolsMob[1].setAll('scale.x', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[1].setAll('scale.y', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[1].setAll('outOfBoundsKill', true);
-			this.bulletPoolsMob[1].setAll('checkWorldBounds', true);
-
 		},
 
 		update: function () {
@@ -1276,17 +1275,44 @@
 		},
 
 		updateBackground: function (delta) {
+
 			// SCROLLING
 
+			// Is camera still in the buffer zone ?
 			if (this.ground.y < 0 ) {
+
+				// Let's scroll the ground
 				this.ground.y += CONFIG.GROUND_SPEED * CONFIG.PIXEL_RATIO * delta;
 
 			} else {
+
+				this.scrollCounter += CONFIG.WORLD_SWAP_HEIGHT;
+
+				if (this.scrollCounter > CONFIG.WORLD_HEIGHT - this.groundHeight) {
+					this.scrollCounter = 0;
+				}
+
+				this.drawGround();
+
 				this.ground.y = - this.scrollMax;
 			}
 		},
 
+		drawGround: function () {
+
+
+			for (var i = 0; i < CONFIG.WORLD_WIDTH; i++) {
+				for(var j = 0; j < this.groundHeight; j++) {
+
+					var rowOffset = CONFIG.WORLD_HEIGHT - (this.groundHeight + this.scrollCounter) + j;
+
+					this.map.putTile(this.terrainData[i][rowOffset],i,j,this.ground);
+				}
+			}
+		},
+
 		onInputDown: function () {
+
 			this.game.state.start('menu');
 		},
 
