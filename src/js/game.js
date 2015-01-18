@@ -5,10 +5,39 @@
 
 
 	/************************************************************************************************
-	 * ACTOR CLASS
+	 * SPRITER CLASS
 	 * 
 	 * Direct child from Phaser.Sprite class
 	 * Set basic parameters common to all prites on screen
+	 *
+	 ************************************************************************************************/
+
+
+	function Spriter(state, image) {
+
+		this.state = state;
+		this.game = state.game;
+
+		// Call parent constructor
+		Phaser.Sprite.call(this, this.game, 0, 0, image);
+		// Add the object to the game world
+		this.game.add.existing(this);
+
+		// Pure common things to ALL objects
+		this.anchor.setTo(0.5, 0.5);
+		this.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO);
+		this.game.physics.enable(this, Phaser.Physics.ARCADE);
+	}
+
+	Spriter.prototype = Object.create(Phaser.Sprite.prototype);
+	Spriter.prototype.constructor = Spriter;
+
+
+/************************************************************************************************
+	 * ACTOR CLASS
+	 * 
+	 * Add some common properties like beeing pinned to ground
+	 * 
 	 *
 	 ************************************************************************************************/
 
@@ -19,17 +48,12 @@
 		this.game = state.game;
 
 		// Call parent constructor
-		Phaser.Sprite.call(this, this.game, 0, 0, image);
-		// Add the object to the game world
-		this.game.add.existing(this);
+		Spriter.call(this, state, image);
 
-		// Pure common things to ALL actor abjects
-		this.anchor.setTo(0.5, 0.5);
-		this.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO);
-		this.game.physics.enable(this, Phaser.Physics.ARCADE);
+		this.isPinnedToGround = false;
 	}
 
-	Actor.prototype = Object.create(Phaser.Sprite.prototype);
+	Actor.prototype = Object.create(Spriter.prototype);
 	Actor.prototype.constructor = Actor;
 
 
@@ -186,6 +210,7 @@
 		this.shootDelay = 1000;
 		this.speed = 100;
 		this.points = 100;
+		this.bulletType = 0;
 		this.bulletSpeed = 100;
 	}
 
@@ -198,14 +223,14 @@
 		Mob.prototype.update.call(this);
 
 		// Mob shoot
-		if (this.alive && this.state.player.alive && this.y < this.state.player.y - 100 * CONFIG.PIXEL_RATIO && this.state.time.now > this.nextShotAt && this.state.bulletPoolMob.countDead() > 0) {
+		if (this.alive && this.state.player.alive && this.y < this.state.player.y - 100 * CONFIG.PIXEL_RATIO && this.state.time.now > this.nextShotAt && this.state.bulletPoolsMob[this.bulletType].countDead() > 0) {
 			this.shoot();
 		}
 	};
 
 	Enemy.prototype.shoot = function () {
 
-		var bullet = this.state.bulletPoolMob.getFirstExists(false);
+		var bullet = this.state.bulletPoolsMob[this.bulletType].getFirstExists(false);
 		bullet.reset(this.x, this.y);
 		this.state.physics.arcade.moveToObject(bullet, this.state.player, this.bulletSpeed * CONFIG.PIXEL_RATIO);
 
@@ -224,16 +249,24 @@
 
 	Enemy.prototype.revive = function () {
 
-		// spawn at a random location top of the screen
-		this.reset( this.game.rnd.between(16, CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO - 16), - 32);
+
+		if (! this.isPinnedToGround) {
+
+			// spawn at a random location top of the screen
+			this.reset( this.game.rnd.between(16, CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO - 16), - 32);
+			this.body.velocity.y = this.speed * CONFIG.PIXEL_RATIO;
+
+		} else {
+			// spawn at a random location top of the screen, aligned with ground grid
+			this.reset( (this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO, - 32);
+			this.body.velocity.y = CONFIG.GROUND_SPEED * CONFIG.PIXEL_RATIO;
+		}
+
+		this.nextShotAt = this.game.rnd.integerInRange(0, this.shootDelay);
 
 		// Call the parent revive function
 		Mob.prototype.revive.call(this);
 
-		// also randomize the speed
-		this.body.velocity.y = this.speed * CONFIG.PIXEL_RATIO;
-
-		this.nextShotAt = this.state.rnd.integerInRange(0, this.shootDelay);
 	};
 
 	Enemy.prototype.loot = function () {
@@ -342,6 +375,65 @@
 
 		// Call the parent update function
 		Enemy.prototype.update.call(this);
+	};
+
+
+/************************************************************************************************
+	 * TURRET CLASS
+	 * 
+	 * A specific type of (ground) Enemy
+	 *
+	 ************************************************************************************************/
+
+	function Turret(state) {
+
+		// Call parent constructor
+		Enemy.call(this, state, 'mob_turret_1');
+
+		this.maxHealth = 150;
+		this.speed = 0;
+		this.isPinnedToGround = true;
+		this.bulletType = 1;
+		this.shootDelay = 1500;
+		this.points = 2000;
+
+		var preshoot = this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 15, false);
+
+		// preshoot.onStart.add(animationStarted, this);
+		preshoot.onComplete.add(function (sprite, animation) {
+
+			// Call the parent shoot function
+			Enemy.prototype.shoot.call(this);
+			sprite.play('shoot');
+		}, this);
+
+		var shoot = this.animations.add('shoot', [8, 7, 6, 5, 4, 3, 2, 1, 0], 15, false);
+		shoot.onComplete.add(function (sprite, animation) {
+
+			sprite.play('idle');
+		}, this);
+
+    this.animations.add('idle', [0], 5, true);
+		// this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 10, true);
+		// this.animations.add('shoot', [8, 7, 6, 5, 4, 3, 2, 1, 0], 10, true);
+		this.play('idle');
+	}
+
+	Turret.prototype = Object.create(Enemy.prototype);
+	Turret.prototype.constructor = Turret;
+
+	Turret.prototype.update = function () {
+
+		// Call the parent update function
+		Enemy.prototype.update.call(this);
+	};
+
+	Turret.prototype.shoot = function() {
+
+		this.play('pre-shoot');
+
+		// Call the parent shoot function
+		// Enemy.prototype.shoot.call(this);
 	};
 
 
@@ -659,80 +751,7 @@
 
 			// MOBS
 
-			this.mobPools = [];
-			var mob;
-
-			// Planes
-			this.mobPools[0] = this.add.group();
-
-			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
-				mob = new Plane(this);
-				this.mobPools[0].add(mob);
-				mob.exists = false; 
-				mob.alive = false;
-			}
-
-			// Vessels
-			this.mobPools[1] = this.add.group();
-
-			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
-				mob = new Vessel(this);
-				this.mobPools[1].add(mob);
-				mob.exists = false; 
-				mob.alive = false;
-			}
-
-			// Flagships
-			this.mobPools[2] = this.add.group();
-
-			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
-				mob = new Flagship(this);
-				this.mobPools[2].add(mob);
-				mob.exists = false; 
-				mob.alive = false;
-			}
-
-			// TODO !
-			// 	createMultipleExtends(state, number, poolName, className);
-
-			// function createMultipleExtends(number, pool, className) {
-			// 	for (var i = 0; i < number; i++) {
-			// 		var sprite = new Mob(this);
-			// 		state[poolName].add(sprite);
-			// 		sprite.exists = false; 
-			// 		sprite.alive = false;
-			// 	}
-			// }
-
-			//			this.mobPool.createMultiple(CONFIG.MOBPOOL_SIZE, 'mob_plane_1');
-			
-			this.enemyDelay = [];
-			this.nextEnemyAt = [];
-
-			this.enemyDelay[0] = 1000;
-			// this.nextEnemyAt[0] = this.enemyDelay[0];
-
-			this.enemyDelay[1] = 5000;
-			// this.nextEnemyAt[1] = 0;
-
-			this.enemyDelay[2] = 30000;
-			// this.nextEnemyAt[2] = 0;
-
-			this.nextEnemyAt = this.enemyDelay.slice();
-
-
-			// MOB BULLETS
-
-			this.bulletPoolMob = this.add.group();
-			this.bulletPoolMob.enableBody = true;
-			this.bulletPoolMob.physicsBodyType = Phaser.Physics.ARCADE;
-			this.bulletPoolMob.createMultiple(100, 'mob_bullet_1');
-			this.bulletPoolMob.setAll('anchor.x', 0.5);
-			this.bulletPoolMob.setAll('anchor.y', 0.5);
-			this.bulletPoolMob.setAll('scale.x', CONFIG.PIXEL_RATIO);
-			this.bulletPoolMob.setAll('scale.y', CONFIG.PIXEL_RATIO);
-			this.bulletPoolMob.setAll('outOfBoundsKill', true);
-			this.bulletPoolMob.setAll('checkWorldBounds', true);
+			this.createEnemies();
 
 			
 			// USER ACTIONS
@@ -990,6 +1009,119 @@
 			return mapFinal;
 		},
 
+		createEnemies: function () {
+
+			var mob, i;
+
+			// FLYING ENEMIES
+
+			this.mobPools = [];
+
+			// Planes
+			this.mobPools[0] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Plane(this);
+				this.mobPools[0].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
+			// Vessels
+			this.mobPools[1] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Vessel(this);
+				this.mobPools[1].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
+			// Flagships
+			this.mobPools[2] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Flagship(this);
+				this.mobPools[2].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
+
+			// GROUND ENEMIES
+
+			this.mobPoolsGround = [];
+
+			// Tuerrets
+			this.mobPoolsGround[0] = this.add.group();
+
+			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
+				mob = new Turret(this);
+				this.mobPoolsGround[0].add(mob);
+				mob.exists = false; 
+				mob.alive = false;
+			}
+
+			// TODO !
+			// 	createMultipleExtends(state, number, poolName, className);
+
+			// function createMultipleExtends(number, pool, className) {
+			// 	for (var i = 0; i < number; i++) {
+			// 		var sprite = new Mob(this);
+			// 		state[poolName].add(sprite);
+			// 		sprite.exists = false; 
+			// 		sprite.alive = false;
+			// 	}
+			// }
+
+			//			this.mobPool.createMultiple(CONFIG.MOBPOOL_SIZE, 'mob_plane_1');
+			
+			this.enemyDelay = [];
+			this.nextEnemyAt = [];
+
+			this.enemyDelay[0] = 1000;
+			this.enemyDelay[1] = 5000;
+			this.enemyDelay[2] = 30000;
+
+			this.nextEnemyAt = this.enemyDelay.slice();
+
+
+			this.enemyDelayGround = [];
+			this.nextEnemyGroundAt = [];
+
+			this.enemyDelayGround[0] = 3000;
+
+			this.nextEnemyGroundAt = this.enemyDelayGround.slice();
+
+
+			// MOB BULLETS
+
+			this.bulletPoolsMob = [];
+
+			this.bulletPoolsMob[0] = this.add.group();
+			this.bulletPoolsMob[0].enableBody = true;
+			this.bulletPoolsMob[0].physicsBodyType = Phaser.Physics.ARCADE;
+			this.bulletPoolsMob[0].createMultiple(100, 'mob_bullet_1');
+			this.bulletPoolsMob[0].setAll('anchor.x', 0.5);
+			this.bulletPoolsMob[0].setAll('anchor.y', 0.5);
+			this.bulletPoolsMob[0].setAll('scale.x', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[0].setAll('scale.y', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[0].setAll('outOfBoundsKill', true);
+			this.bulletPoolsMob[0].setAll('checkWorldBounds', true);
+
+			this.bulletPoolsMob[1] = this.add.group();
+			this.bulletPoolsMob[1].enableBody = true;
+			this.bulletPoolsMob[1].physicsBodyType = Phaser.Physics.ARCADE;
+			this.bulletPoolsMob[1].createMultiple(100, 'mob_bullet_2');
+			this.bulletPoolsMob[1].setAll('anchor.x', 0.5);
+			this.bulletPoolsMob[1].setAll('anchor.y', 0.5);
+			this.bulletPoolsMob[1].setAll('scale.x', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[1].setAll('scale.y', CONFIG.PIXEL_RATIO);
+			this.bulletPoolsMob[1].setAll('outOfBoundsKill', true);
+			this.bulletPoolsMob[1].setAll('checkWorldBounds', true);
+
+		},
+
 		update: function () {
 
 			this.delta = (this.game.time.now - this.lastUpdate) / 1000; //in seconds
@@ -1011,13 +1143,26 @@
 
 		updateEnemySpawn: function () {
 
-			for (var i = 0; i < this.mobPools.length; i++) {
+			var enemy, i;
+
+			for (i = 0; i < this.mobPools.length; i++) {
 
 				if (this.nextEnemyAt[i] < this.time.now && this.mobPools[i].countDead() > 0) {
 
 					this.nextEnemyAt[i] = this.time.now + this.enemyDelay[i];
 
-					var enemy = this.mobPools[i].getFirstExists(false);
+					enemy = this.mobPools[i].getFirstExists(false);
+					enemy.revive();
+				}
+			}
+
+			for (i = 0; i < this.mobPoolsGround.length; i++) {
+
+				if (this.nextEnemyGroundAt[i] < this.time.now && this.mobPoolsGround[i].countDead() > 0) {
+
+					this.nextEnemyGroundAt[i] = this.time.now + this.enemyDelayGround[i];
+
+					enemy = this.mobPoolsGround[i].getFirstExists(false);
 					enemy.revive();
 				}
 			}
@@ -1025,7 +1170,11 @@
 
 		updateCollisions: function () {
 
-			for (var i = 0; i < this.mobPools.length; i++) {
+			var i;
+
+			// Flying enemies
+
+			for (i = 0; i < this.mobPools.length; i++) {
 				// Player bullets VS ennemy mobs
 				this.physics.arcade.overlap(this.player.bulletPool, this.mobPools[i], this.bulletVSmob, null, this);
 
@@ -1033,8 +1182,17 @@
 				this.physics.arcade.overlap(this.player, this.mobPools[i], this.playerVSmob, null, this);
 			}
 
+			// Ground enemies
+
+			for (i = 0; i < this.mobPoolsGround.length; i++) {
+				// Player bullets VS ennemy mobs
+				this.physics.arcade.overlap(this.player.bulletPool, this.mobPoolsGround[i], this.bulletVSmob, null, this);
+			}
+
 			// Player VS ennemy bullets
-			this.physics.arcade.overlap(this.bulletPoolMob, this.player, this.playerVSbullet, null, this);
+			for (i = 0; i < this.bulletPoolsMob.length; i++) {
+				this.physics.arcade.overlap(this.bulletPoolsMob[i], this.player, this.playerVSbullet, null, this);
+			}
 
 			// Player VS bonuses
 			this.physics.arcade.overlap(this.bonusPool, this.player, this.playerVSbonus, null, this);
@@ -1140,7 +1298,7 @@
 			this.game.debug.text(
 				'ground.y : ' + Math.round(this.ground.y) + 'px | ' + 
 				this.mobPools[0].countLiving() + '/' + CONFIG.MOBPOOL_SIZE + ' mobs | ' +
-				(100 - this.bulletPoolMob.countDead()) + ' mob bullets | ' +
+				(100 - this.bulletPoolsMob[0].countDead()) + ' mob bullets | ' +
 				(100 - this.player.bulletPool.countDead()) + ' bullets | '
 				, 
 				0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16);
