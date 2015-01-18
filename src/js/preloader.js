@@ -18,6 +18,7 @@
       // GAME ASSETS
 
       this.load.image('tileset_1', 'assets/tileset_1.png');
+      this.load.image('tileset_1_debug', 'assets/tileset_1_debug.png');
 
       this.load.spritesheet('player_1', 'assets/player_ship_1.png', 24, 28);
       this.load.spritesheet('player_2', 'assets/player_ship_2.png', 24, 28);

@@ -13,7 +13,7 @@ var CONFIG = {
 	BONUSPOOL_SIZE: 			20,
 
 	SCROLL_SPEED: 				50,
-	SCROLL_ACCEL: 				15,
+	SCROLL_ACCEL: 				10,
 
 	BLINK_DAMAGE_TIME: 		8,
 
@@ -46,6 +46,10 @@ var CONFIG = {
 		strength: 					150,
 		rate: 							4
 	}],
+
+	DEBUG: {
+		tileset: 						false,
+	},
 };
 
 

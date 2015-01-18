@@ -249,7 +249,6 @@
 
 	Enemy.prototype.revive = function () {
 
-
 		if (! this.isPinnedToGround) {
 
 			// spawn at a random location top of the screen
@@ -266,7 +265,6 @@
 
 		// Call the parent revive function
 		Mob.prototype.revive.call(this);
-
 	};
 
 	Enemy.prototype.loot = function () {
@@ -393,6 +391,7 @@
 		this.maxHealth = 150;
 		this.speed = 0;
 		this.isPinnedToGround = true;
+		this.groundType = 
 		this.bulletType = 1;
 		this.shootDelay = 1500;
 		this.points = 2000;
@@ -434,6 +433,22 @@
 
 		// Call the parent shoot function
 		// Enemy.prototype.shoot.call(this);
+	};
+
+	Turret.prototype.revive = function () {
+
+		// spawn at a random location top of the screen, aligned with ground grid
+		this.reset(
+			(this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO,
+			(this.state.ground.y % (28 * CONFIG.PIXEL_RATIO)) - (28 * CONFIG.PIXEL_RATIO / 2)
+			);
+
+		this.body.velocity.y = this.state.scrollSpeed * CONFIG.PIXEL_RATIO;
+
+		this.nextShotAt = this.game.rnd.integerInRange(0, this.shootDelay);
+
+		// Call the parent revive function
+		Mob.prototype.revive.call(this);
 	};
 
 
@@ -731,10 +746,7 @@
 			this.createGround();
 			this.scrollSpeed = CONFIG.SCROLL_SPEED;
 
-			this.player = new Player(this);
-
 			// Ugly !
-			this.game.camera.follow(this.player, Phaser.Camera.FOLLOW_PLATFORMER);
 			this.ground.scrollFactorX = 0.0000125; /// WTF ??? Layer seems to have double x scroll speed
 
 			// BONUSES
@@ -754,6 +766,10 @@
 
 			this.createEnemies();
 
+			// PLAYER
+
+			this.player = new Player(this);
+			this.game.camera.follow(this.player, Phaser.Camera.FOLLOW_PLATFORMER);
 			
 			// USER ACTIONS
 
@@ -786,7 +802,13 @@
 		createGround: function () {
 
 			this.map = this.game.add.tilemap();
-			this.map.addTilesetImage('tileset_1', 'tileset_1', 24, 28, null, null, 0);
+
+			if (CONFIG.DEBUG.tileset) {
+				this.map.addTilesetImage('tileset_1', 'tileset_1_debug', 24, 28, null, null, 0);
+
+			} else {
+				this.map.addTilesetImage('tileset_1', 'tileset_1', 24, 28, null, null, 0);
+			}
 			
 			//  Creates a new blank layer and sets the map dimensions.
 			this.groundWidth = CONFIG.WORLD_WIDTH;
@@ -1338,7 +1360,8 @@
 
 			this.game.debug.text(
 				// 'player.health : ' + this.player.health + ' | ' + 
-				'Camera position : ' + this.camera.x + '/' + this.camera.y + ' | '
+				'Camera position : ' + this.camera.x + '/' + this.camera.y + ' | ' +
+				'SCROLL : ' + Math.round(this.ground.y % (28 * CONFIG.PIXEL_RATIO))
 				,
 
 				0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16 + 16);
