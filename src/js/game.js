@@ -208,7 +208,7 @@
 		Mob.call(this, state, image);
 
 		this.shootDelay = 1000;
-		this.speed = 100;
+		this.speed = 50;
 		this.points = 100;
 		this.bulletType = 0;
 		this.bulletSpeed = 100;
@@ -254,12 +254,12 @@
 
 			// spawn at a random location top of the screen
 			this.reset( this.game.rnd.between(16, CONFIG.WORLD_WIDTH * 24 * CONFIG.PIXEL_RATIO - 16), - 32);
-			this.body.velocity.y = this.speed * CONFIG.PIXEL_RATIO;
+			this.body.velocity.y = (this.speed + this.state.scrollSpeed) * CONFIG.PIXEL_RATIO;
 
 		} else {
 			// spawn at a random location top of the screen, aligned with ground grid
 			this.reset( (this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO, - 32);
-			this.body.velocity.y = CONFIG.GROUND_SPEED * CONFIG.PIXEL_RATIO;
+			this.body.velocity.y = this.state.scrollSpeed * CONFIG.PIXEL_RATIO;
 		}
 
 		this.nextShotAt = this.game.rnd.integerInRange(0, this.shootDelay);
@@ -292,7 +292,7 @@
 		Enemy.call(this, state, 'mob_plane');
 
 		this.maxHealth = 30;
-		this.speed = 100;
+		this.speed = 60;
 		this.shootDelay = 5000;
 		this.bulletSpeed = 125;
 		this.points = 100;
@@ -329,7 +329,7 @@
 		Enemy.call(this, state, 'mob_vessel_1');
 
 		this.maxHealth = 100;
-		this.speed = 80;
+		this.speed = 30;
 		this.shootDelay = 500;
 		this.points = 500;
 
@@ -360,7 +360,7 @@
 		Enemy.call(this, state, 'mob_flagship_1');
 
 		this.maxHealth = 750;
-		this.speed = 60;
+		this.speed = 10;
 		this.shootDelay = 500;
 		this.points = 2000;
 
@@ -400,7 +400,7 @@
 		var preshoot = this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 15, false);
 
 		// preshoot.onStart.add(animationStarted, this);
-		preshoot.onComplete.add(function (sprite, animation) {
+		preshoot.onComplete.add(function (sprite) {
 
 			// Call the parent shoot function
 			Enemy.prototype.shoot.call(this);
@@ -408,7 +408,7 @@
 		}, this);
 
 		var shoot = this.animations.add('shoot', [8, 7, 6, 5, 4, 3, 2, 1, 0], 15, false);
-		shoot.onComplete.add(function (sprite, animation) {
+		shoot.onComplete.add(function (sprite) {
 
 			sprite.play('idle');
 		}, this);
@@ -729,6 +729,7 @@
 
 			this.createWorld();
 			this.createGround();
+			this.scrollSpeed = CONFIG.SCROLL_SPEED;
 
 			this.player = new Player(this);
 
@@ -1278,11 +1279,13 @@
 
 			// SCROLLING
 
+			this.scrollSpeed += CONFIG.SCROLL_ACCEL * delta / 60;
+
 			// Is camera still in the buffer zone ?
 			if (this.ground.y < 0 ) {
 
 				// Let's scroll the ground
-				this.ground.y += CONFIG.GROUND_SPEED * CONFIG.PIXEL_RATIO * delta;
+				this.ground.y += this.scrollSpeed * CONFIG.PIXEL_RATIO * delta;
 
 			} else {
 
