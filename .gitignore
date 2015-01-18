@@ -16,3 +16,4 @@ src/bower_components/phaser-official/tasks/
 src/bower_components/phaser-official/typescript/
 
 src/assets/tyrian-graphics
+dist/assets/tyrian-graphics
