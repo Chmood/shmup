@@ -17,6 +17,8 @@
 
       // GAME ASSETS
 
+      // Graphics
+
       this.load.image('tileset_1', 'assets/tileset_1.png');
       this.load.image('tileset_1_debug', 'assets/tileset_1_debug.png');
 
@@ -39,6 +41,22 @@
       this.load.spritesheet('bonus_coin', 'assets/coins.png', 12, 12);
 
       this.load.bitmapFont('minecraftia', 'assets/minecraftia.png', 'assets/minecraftia.xml');
+
+      // Audio
+
+      this.load.audio('shoot_player_1', 'assets/audio/shoot_player_1.wav');
+      this.load.audio('shoot_player_2', 'assets/audio/shoot_player_2.wav');
+      this.load.audio('shoot_player_3', 'assets/audio/shoot_player_3.wav');
+      this.load.audio('shoot_player_4', 'assets/audio/shoot_player_4.wav');
+      this.load.audio('shoot_player_5', 'assets/audio/shoot_player_5.wav');
+
+      this.load.audio('explosion_1', 'assets/audio/explosion_1.wav');
+      this.load.audio('explosion_2', 'assets/audio/explosion_2.wav');
+      this.load.audio('explosion_3', 'assets/audio/explosion_3.wav');
+      this.load.audio('explosion_4', 'assets/audio/explosion_4.wav');
+
+      this.load.audio('hurt_1', 'assets/audio/hurt_1.wav');
+      this.load.audio('collect_1', 'assets/audio/collect_1.wav');
     },
 
     create: function () {

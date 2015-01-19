@@ -245,6 +245,17 @@
 		if (this.state.rnd.integerInRange(0, 100) < 20) {
 			this.loot();
 		}
+
+		var s = this.maxHealth,
+				f;
+
+		if (s < 80 ) { f = 1; }
+			else if (s < 200 ) { f = 2; }
+			else if (s < 500 ) { f = 3; }
+			else { f = 4; }
+
+		this.game.sound['explosion_' + f].play();
+
 	};
 
 	Enemy.prototype.revive = function () {
@@ -664,6 +675,19 @@
 			bullet.reset(this.x, this.y - 20);
 
 			bullet.body.velocity.y = -500 * CONFIG.PIXEL_RATIO;
+
+
+			// TODO in updateBulletPool instead !!!
+			var s = this.strength,
+					f;
+
+			if (s < 100 ) { f = 1; }
+				else if (s < 120 ) { f = 2; }
+				else if (s < 140 ) { f = 3; }
+				else if (s < 160 ) { f = 4; }
+				else { f = 5; }
+
+			this.game.sound['shoot_player_' + f].play('', 0, 0.25);
 		}
 	};
 
@@ -789,6 +813,10 @@
 			this.guiText2.fixedToCamera = true;
 
 			this.updateGUI();
+
+			// AUDIO
+
+			this.createAudio();
 		},
 
 		createWorld: function () {
@@ -1147,6 +1175,23 @@
 			this.nextEnemyGroundAt = this.enemyDelayGround.slice();
 		},
 
+		createAudio: function () {
+			this.sound['shoot_player_1'] = this.add.audio('shoot_player_1');
+			this.sound['shoot_player_2'] = this.add.audio('shoot_player_2');
+			this.sound['shoot_player_3'] = this.add.audio('shoot_player_3');
+			this.sound['shoot_player_4'] = this.add.audio('shoot_player_4');
+			this.sound['shoot_player_5'] = this.add.audio('shoot_player_5');
+
+			this.sound['explosion_1'] = this.add.audio('explosion_1');
+			this.sound['explosion_2'] = this.add.audio('explosion_2');
+			this.sound['explosion_3'] = this.add.audio('explosion_3');
+
+			this.sound['hurt_1'] = this.add.audio('hurt_1');
+			this.sound['collect_1'] = this.add.audio('collect_1');
+
+    	// this.sound['shoot_player'].allowMultiple = true;
+		},
+
 		update: function () {
 
 			this.delta = (this.game.time.now - this.lastUpdate) / 1000; //in seconds
@@ -1310,6 +1355,11 @@
 				player.kill();
 				player.alive = false;
 				this.explode(player);
+
+				this.sound['explosion_3'].play();
+
+			} else {
+				this.sound['hurt_1'].play();
 			}
 		},
 
@@ -1318,6 +1368,7 @@
 			player.collectUpgrade(bonus.bonusClass);
 
 			this.updateGUI();
+			this.sound['collect_1'].play();
 		},
 
 		explode: function (thing) {
