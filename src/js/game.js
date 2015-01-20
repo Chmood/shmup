@@ -254,6 +254,7 @@
 			else if (s < 500 ) { f = 3; }
 			else { f = 4; }
 
+		// TODO : possible exception : "cannot execute function play() of undefined" (f out of bounds ?)
 		this.game.sound['explosion_' + f].play();
 
 	};
@@ -1406,7 +1407,9 @@
 
 			// SCROLLING
 
-			this.scrollSpeed += CONFIG.SCROLL_ACCEL * delta / 60;
+			if (this.player.isAlive) {
+				this.scrollSpeed += CONFIG.SCROLL_ACCEL * delta / 60;
+			}
 
 			// Is camera still in the buffer zone ?
 			if (this.ground.y < 0 ) {
