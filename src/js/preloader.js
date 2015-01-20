@@ -57,6 +57,8 @@
 
       this.load.audio('hurt_1', 'assets/audio/hurt_1.wav');
       this.load.audio('collect_1', 'assets/audio/collect_1.wav');
+
+      this.load.binary('music_1', 'assets/audio/mod/4-track_from_heaven.mod');
     },
 
     create: function () {

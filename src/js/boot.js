@@ -12,10 +12,12 @@ var CONFIG = {
 	BULLETPOOL_SIZE: 			100,
 	BONUSPOOL_SIZE: 			20,
 
-	SCROLL_SPEED: 				50,
+	SCROLL_SPEED: 				40,
 	SCROLL_ACCEL: 				15,
 
 	BLINK_DAMAGE_TIME: 		8,
+
+	AUDIO_LEVEL: 					0.5,
 
 	CLASS_STATS: 					[{	
 		className: 					'Viper',

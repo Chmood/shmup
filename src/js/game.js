@@ -254,7 +254,6 @@
 			else if (s < 500 ) { f = 3; }
 			else { f = 4; }
 
-		// TODO : possible exception : "cannot execute function play() of undefined" (f out of bounds ?)
 		this.game.sound['explosion_' + f].play();
 
 	};
@@ -1186,9 +1185,14 @@
 			this.sound['explosion_1'] = this.add.audio('explosion_1');
 			this.sound['explosion_2'] = this.add.audio('explosion_2');
 			this.sound['explosion_3'] = this.add.audio('explosion_3');
+			this.sound['explosion_4'] = this.add.audio('explosion_4');
 
 			this.sound['hurt_1'] = this.add.audio('hurt_1');
 			this.sound['collect_1'] = this.add.audio('collect_1');
+
+			// TODO : music !
+			// this.sound['music_1'] = this.add.audio('music_1');
+			// this.sound['music_1'].play();
 
     	// this.sound['shoot_player'].allowMultiple = true;
 		},
@@ -1408,20 +1412,20 @@
 			// SCROLLING
 
 			if (this.player.isAlive) {
-				this.scrollSpeed += CONFIG.SCROLL_ACCEL * delta / 60;
+				this.scrollSpeed += CONFIG.SCROLL_ACCEL * delta / 60;	// Accelerate scrolling speed
 			}
 
-			// Is camera still in the buffer zone ?
-			if (this.ground.y < 0 ) {
+			if (this.ground.y < 0 ) {	// Is camera still in the buffer zone ?
 
 				// Let's scroll the ground
 				this.ground.y += this.scrollSpeed * CONFIG.PIXEL_RATIO * delta;
 
-			} else {
 
-				this.scrollCounter += CONFIG.WORLD_SWAP_HEIGHT;
+			} else {	// Camera has reached the edge of the buffer zone, next chunk of map
 
-				if (this.scrollCounter > CONFIG.WORLD_HEIGHT) {
+				this.scrollCounter += CONFIG.WORLD_SWAP_HEIGHT;	// 
+
+				if (this.scrollCounter > CONFIG.WORLD_HEIGHT) { // Has camera reached the end of the world ?
 					this.scrollCounter = 0;
 				}
 
