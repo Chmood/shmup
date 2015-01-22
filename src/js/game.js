@@ -1099,7 +1099,7 @@
 
 			this.mobPoolsGround = [];
 
-			// Tuerrets
+			// Turrets
 			this.mobPoolsGround[0] = this.add.group();
 
 			for (i = 0; i < CONFIG.MOBPOOL_SIZE; i++) {
@@ -1165,7 +1165,11 @@
 			this.enemyDelay[1] = 5000;
 			this.enemyDelay[2] = 30000;
 
-			this.nextEnemyAt = this.enemyDelay.slice();
+			this.nextEnemyAt[0] = this.time.now + 1000;
+			this.nextEnemyAt[1] = this.time.now + 5000;
+			this.nextEnemyAt[2] = this.time.now + 30000;
+
+console.log(this.nextEnemyAt)
 
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
@@ -1338,6 +1342,7 @@
 			}
 		},
 
+
 		playerVSmob: function (player, mob) {
 			player.takeDamage(20);
 			mob.kill();
@@ -1376,6 +1381,7 @@
 			this.sound['collect_1'].play();
 		},
 
+		// TODO : mob method
 		explode: function (thing) {
 			var explosion = this.add.sprite(thing.x, thing.y, 'explosion_1');
 			explosion.anchor.setTo(0.5, 0.5);
