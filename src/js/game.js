@@ -108,6 +108,7 @@
 	 * MOB CLASS
 	 * 
 	 * Have health, can take damage and die
+	 * Dies if below the screen
 	 * Parent of both player and enemies
 	 *
 	 ************************************************************************************************/
@@ -288,6 +289,8 @@
 		bonus.reset(this.x, this.y);
 		bonus.body.velocity.y = 40 * CONFIG.PIXEL_RATIO;
 		bonus.body.angularVelocity = 30;
+
+		type = type;
 	};
 
 
@@ -408,9 +411,9 @@
 		this.maxHealth = 150;
 		this.speed = 0;
 		this.isPinnedToGround = true;
-		this.groundType = 
+		// this.groundType = 
 		this.bulletType = 1;
-		this.shootDelay = 1500;
+		this.shootDelay = 2500;
 		this.points = 2000;
 		this.lootProbability = 0.5;
 
@@ -455,12 +458,6 @@
 
 	Turret.prototype.revive = function (i, j) {
 
-		// spawn at a random location top of the screen, aligned with ground grid
-		// this.reset(
-		// 	(this.game.rnd.integerInRange(1, CONFIG.WORLD_WIDTH) - 0.5) * 24 * CONFIG.PIXEL_RATIO,
-		// 	(this.state.ground.y % (28 * CONFIG.PIXEL_RATIO)) - (28 * CONFIG.PIXEL_RATIO / 2)
-		// 	);
-
 		this.reset(
 			(i + 0.5) * 24 * CONFIG.PIXEL_RATIO,
 			((j + 0.5) - CONFIG.WORLD_SWAP_HEIGHT) * 28 * CONFIG.PIXEL_RATIO
@@ -474,6 +471,56 @@
 		Mob.prototype.revive.call(this);
 	};
 
+
+/************************************************************************************************
+	 * CLOUD CLASS
+	 * 
+	 * A specific type of (ground) Enemy
+	 *
+	 ************************************************************************************************/
+
+	function Cloud(state) {
+
+		// Call parent constructor
+		Mob.call(this, state, 'clouds');
+
+		this.speed = 0;
+		this.type = 0;
+
+    this.animations.add('idle_0', [0]);
+    this.animations.add('idle_1', [1]);
+    this.animations.add('idle_2', [2]);
+    this.animations.add('idle_3', [3]);
+    this.animations.add('idle_4', [4]);
+    this.animations.add('idle_5', [5]);
+    this.animations.add('idle_6', [6]);
+    this.animations.add('idle_7', [7]);
+	}
+
+	Cloud.prototype = Object.create(Mob.prototype);
+	Cloud.prototype.constructor = Cloud;
+
+	Cloud.prototype.update = function () {
+
+		// Call the parent update function
+		Mob.prototype.update.call(this);
+	};
+
+	Cloud.prototype.revive = function () {
+
+		this.reset(
+			this.game.rnd.integerInRange(0, CONFIG.WORLD_WIDTH) * 24 * CONFIG.PIXEL_RATIO,
+			- 3 * 28 * CONFIG.PIXEL_RATIO
+			);
+
+		this.body.velocity.y = (this.game.rnd.realInRange(- 1, 1) * CONFIG.CLOUD_WIND_SPEED + CONFIG.CLOUD_WIND_SPEED + this.state.scrollSpeed) * CONFIG.PIXEL_RATIO;
+
+		this.type = this.game.rnd.integerInRange(0, 7);
+		this.play('idle_' + this.type);
+
+		// Call the parent revive function
+		Mob.prototype.revive.call(this);
+	};
 
 	/************************************************************************************************
 	 * PLAYER CLASS
@@ -756,6 +803,8 @@
 
 		this.updateStats();
 		this.updateBulletPool();
+
+		this.state.sound['collect_1'].play();
 	};	
 
 
@@ -782,11 +831,25 @@
 			this.createGround();
 			this.scrollSpeed = CONFIG.SCROLL_SPEED;
 
+			var i, o;
+
+			// Clouds
+
+			this.cloudPool = this.add.group();
+
+			for (i = 0; i < CONFIG.CLOUDPOOL_SIZE; i++) {
+				o = new Cloud(this);
+				this.cloudPool.add(o);
+				o.exists = false; 
+				o.alive = false;
+			}
+
+			this.nextCloudAt = 0;
+			this.cloudDelay = 1000;
+
 			// BONUSES
 
 			this.bonusPool =  this.add.group();
-
-			var i, o;
 
 			for (i = 0; i < CONFIG.BONUSPOOL_SIZE; i++) {
 				o = new Collectible(this, 'bonus_cube');
@@ -1215,6 +1278,9 @@
 			// Enemy spawn
 			this.updateEnemySpawn();
 
+			// Cloud spawn
+			// this.updateCloudSpawn();
+
 			// Collisions
 			this.updateCollisions();
 
@@ -1247,6 +1313,19 @@
 			// 		enemy.revive();
 			// 	}
 			// }
+		},
+
+		updateCloudSpawn: function () {
+
+			var cloud, i;
+
+			if (this.nextCloudAt < this.time.now && this.cloudPool.countDead() > 0) {
+
+				this.nextCloudAt = this.time.now + this.cloudDelay;
+
+				cloud = this.cloudPool.getFirstExists(false);
+				cloud.revive();
+			}
 		},
 
 		updateEnemySpawnGround: function () {
@@ -1350,19 +1429,29 @@
 
 
 		playerVSmob: function (player, mob) {
+
 			player.takeDamage(20);
 			mob.kill();
 			this.explode(mob);
+			// this.sound['explosion_1'].play();
+
 			this.updateGUI();
 
 			if (player.health <= 0) {
 				player.kill();
 				player.alive = false;
 				this.explode(player);
+
+				this.sound['explosion_3'].play();
+
+			} else {
+
+				this.sound['hurt_1'].play();
 			}
 		},
 
 		playerVSbullet: function (player, bullet) {
+
 			player.takeDamage(20);
 			bullet.kill();
 			this.updateGUI();
@@ -1384,7 +1473,6 @@
 			player.collectUpgrade(bonus.bonusClass);
 
 			this.updateGUI();
-			this.sound['collect_1'].play();
 		},
 
 		// TODO : mob method

@@ -22,6 +22,8 @@
       this.load.image('tileset_1', 'assets/tileset_1.png');
       this.load.image('tileset_1_debug', 'assets/tileset_1_debug.png');
 
+      this.load.spritesheet('clouds', 'assets/clouds.png', 96, 168);
+
       this.load.spritesheet('player_1', 'assets/player_ship_1.png', 24, 28);
       this.load.spritesheet('player_2', 'assets/player_ship_2.png', 24, 28);
       this.load.spritesheet('player_3', 'assets/player_ship_3.png', 24, 28);
@@ -58,7 +60,8 @@
       this.load.audio('hurt_1', 'assets/audio/hurt_1.wav');
       this.load.audio('collect_1', 'assets/audio/collect_1.wav');
 
-      this.load.binary('music_1', 'assets/audio/mod/4-track_from_heaven.mod');
+      // this.load.binary('music_1', 'assets/audio/mod/4-track_from_heaven.mod');
+      // this.load.audio('music_1', 'assets/audio/music_1.wav');
     },
 
     create: function () {
