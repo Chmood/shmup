@@ -212,6 +212,9 @@
 		this.points = 100;
 		this.bulletType = 0;
 		this.bulletSpeed = 100;
+
+		this.lootProbability = 0.2;
+		this.lootType = 1;
 	}
 
 	Enemy.prototype = Object.create(Mob.prototype);
@@ -242,8 +245,8 @@
 		// Call the parent die function
 		Mob.prototype.die.call(this);
 
-		if (this.state.rnd.integerInRange(0, 100) < 20) {
-			this.loot();
+		if (this.state.rnd.realInRange(0, 1) < this.lootProbability) {
+			this.loot(this.lootType);
 		}
 
 		var s = this.maxHealth,
@@ -278,7 +281,7 @@
 		Mob.prototype.revive.call(this);
 	};
 
-	Enemy.prototype.loot = function () {
+	Enemy.prototype.loot = function (type) {
 
 		var bonus = this.state.bonusPool.getFirstExists(false);
 		bonus.updateClass();
@@ -305,6 +308,7 @@
 		this.shootDelay = 5000;
 		this.bulletSpeed = 125;
 		this.points = 100;
+		this.lootProbability = 0.1;
 
 		this.planeClass = state.rnd.integerInRange(0, 7);
 
@@ -341,6 +345,7 @@
 		this.speed = 30;
 		this.shootDelay = 500;
 		this.points = 500;
+		this.lootProbability = 0.5;
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -372,6 +377,7 @@
 		this.speed = 10;
 		this.shootDelay = 500;
 		this.points = 2000;
+		this.lootProbability = 0.8;
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -406,6 +412,7 @@
 		this.bulletType = 1;
 		this.shootDelay = 1500;
 		this.points = 2000;
+		this.lootProbability = 0.5;
 
 		var preshoot = this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 15, false);
 
@@ -1169,14 +1176,13 @@
 			this.nextEnemyAt[1] = this.time.now + 5000;
 			this.nextEnemyAt[2] = this.time.now + 30000;
 
-console.log(this.nextEnemyAt)
 
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
 
 			this.enemyDelayGround[0] = 3000;
 
-			this.nextEnemyGroundAt = this.enemyDelayGround.slice();
+			this.nextEnemyGroundAt = this.time.now + this.enemyDelayGround.slice();
 		},
 
 		createAudio: function () {
