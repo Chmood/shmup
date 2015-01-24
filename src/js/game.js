@@ -33,7 +33,166 @@
 	Spriter.prototype.constructor = Spriter;
 
 
-/************************************************************************************************
+	/************************************************************************************************
+	 * BULLET CLASS
+	 * 
+	 * Just one single enemy bullet
+	 * 
+	 *
+	 ************************************************************************************************/
+
+	function Bullet(state, type) {
+
+		this.state = state;
+		this.game = state.game;
+
+		// Call parent constructor
+		Spriter.call(this, state, 'mob_bullet_' + (type + 1));
+
+		this.type = 0;
+
+		this.energy = 30;
+		this.speed = 100;
+		this.shooter = undefined;
+
+		// this.checkWorldBounds = true;
+		// this.outOfBoundsKill = true;
+	}
+
+	Bullet.prototype = Object.create(Spriter.prototype);
+	Bullet.prototype.constructor = Bullet;
+
+	Bullet.prototype.revive = function (shooter, angle) {
+
+		this.shooter = shooter;
+
+		this.reset(shooter.x, shooter.y);
+		this.body.velocity.x = (this.speed * Math.sin(angle)) * CONFIG.PIXEL_RATIO;
+		this.body.velocity.y = (this.speed * Math.cos(angle)) * CONFIG.PIXEL_RATIO;
+	};
+
+	Bullet.prototype.update = function () {
+
+		if (this.alive) {
+
+			// Call parent update function
+			Spriter.prototype.update.call(this);
+
+			// Kill bullet if out of the screen
+			var safeRange = 20;
+
+			if (this.x < - safeRange * CONFIG.PIXEL_RATIO ||
+				this.x > (CONFIG.WORLD_WIDTH * 24 + safeRange) * CONFIG.PIXEL_RATIO ||
+				this.y < - safeRange * CONFIG.PIXEL_RATIO ||
+				this.y > (CONFIG.GAME_HEIGHT + safeRange) * CONFIG.PIXEL_RATIO) {
+				this.kill();
+			}
+		}
+	};
+
+
+	/************************************************************************************************
+	 * SHOOT CLASS
+	 * 
+	 * One enemy shoot, firing one or several Bullets, all at once or one-by-one
+	 * 
+	 *
+	 ************************************************************************************************/
+
+	function Shoot(state, shooter, shootConfig) {
+
+		this.state = state;
+		this.game = state.game;
+
+		this.shootConfig = shootConfig;
+
+		// this.nBulletsAlive = shootConfig.nBullets;
+
+		this.bullets = [];
+
+		this.t = [];
+
+		for (var j = 0; j < shootConfig.nShoots; j++) {
+
+			// bulletType: 1,
+			// nBullets: 7, 
+			// bulletDelay: 0, 
+			// bulletAngle: 0, 
+			// bulletSpread: 0, 
+
+			// nShoots: 3, 
+			// shootDelay: 500, 
+			// shootAngle: 0, 
+			// shootRotationSpeed: 0.2
+
+			this.t[j] = window.setTimeout((function(that, x) { return function() {	// Closure
+
+				var config = that.shootConfig;
+
+				var shootAngle;
+				if (config.shootAngle === 999) {	// Auto-aim player
+					
+				} else if (config.shootAngle === -999) {	// Random aim
+					shootAngle = that.game.rnd.realInRange(0, 2 * Math.PI);
+
+				} else {
+					shootAngle = config.shootAngle;
+				}
+
+				var bulletAngleStep = 0;
+				if (config.nBullets > 1) {
+
+					if (config.bulletSpread === 0) { // This is the "auto-pan" at 360° special mode
+						bulletAngleStep = 2 * Math.PI / config.nBullets;
+
+					} else {
+						bulletAngleStep = config.bulletSpread;
+					}
+				}
+
+				x = x;
+
+				for (var i = 0; i < config.nBullets; i++) {
+
+					if (that.state.bulletPoolsMob[config.bulletType].countDead() > 0) {
+						that.bullets[i] = that.state.bulletPoolsMob[config.bulletType].getFirstExists(false);
+
+				// this.state.physics.arcade.moveToObject(bullet, this.state.player, this.bulletSpeed * CONFIG.PIXEL_RATIO);
+
+						var angle;
+
+						if (config.bulletSpread === 0) {
+							angle = shootAngle + (i * bulletAngleStep);
+
+						} else {
+							angle = shootAngle + ((i - (config.nBullets - 1) / 2) * bulletAngleStep);
+						}
+
+						that.bullets[i].revive(shooter, angle);
+					}
+				}
+			}; })(this, j), j * shootConfig.shootDelay);
+		}
+	}
+
+
+	Shoot.prototype.die = function (bulletCancel) {
+
+		// Bullet cancel : kill all bullets of the shoot
+		if (bulletCancel) {
+			this.bullets.forEach(function(bullet) {
+				bullet.kill();
+			});
+		}
+
+		// Cancel all running timers
+		this.t.forEach(function(timer) {
+			window.clearTimeout(timer);
+		});
+	};
+
+
+	/************************************************************************************************
 	 * ACTOR CLASS
 	 * 
 	 * Add some common properties like beeing pinned to ground
@@ -86,7 +245,6 @@
 			this.kill();
 			return;
 		}
-
 	};
 
 	Collectible.prototype.updateClass = function () {
@@ -213,9 +371,13 @@
 		this.points = 100;
 		this.bulletType = 0;
 		this.bulletSpeed = 100;
+		this.bulletCancel = false;
 
 		this.lootProbability = 0.2;
 		this.lootType = 1;
+
+		this.shootConfig = {};
+		this.shoots = [];
 	}
 
 	Enemy.prototype = Object.create(Mob.prototype);
@@ -228,15 +390,13 @@
 
 		// Mob shoot
 		if (this.alive && this.state.player.alive && this.y < this.state.player.y - 100 * CONFIG.PIXEL_RATIO && this.state.time.now > this.nextShotAt && this.state.bulletPoolsMob[this.bulletType].countDead() > 0) {
-			this.shoot();
+			this.shoot(this.shootConfig);
 		}
 	};
 
-	Enemy.prototype.shoot = function () {
+	Enemy.prototype.shoot = function (shootConfig) {
 
-		var bullet = this.state.bulletPoolsMob[this.bulletType].getFirstExists(false);
-		bullet.reset(this.x, this.y);
-		this.state.physics.arcade.moveToObject(bullet, this.state.player, this.bulletSpeed * CONFIG.PIXEL_RATIO);
+		this.shoots.push(new Shoot(this.state, this, shootConfig));
 
 		this.nextShotAt = this.state.time.now + this.shootDelay;
 	};
@@ -246,10 +406,18 @@
 		// Call the parent die function
 		Mob.prototype.die.call(this);
 
+		// Cancel planed shoots
+		var bulletCancel = this.bulletCancel;
+		this.shoots.forEach(function(shoot) {
+			shoot.die(bulletCancel);
+		});
+
+		// Loot things
 		if (this.state.rnd.realInRange(0, 1) < this.lootProbability) {
 			this.loot(this.lootType);
 		}
 
+		// Explosion sound
 		var s = this.maxHealth,
 				f;
 
@@ -259,7 +427,6 @@
 			else { f = 4; }
 
 		this.game.sound['explosion_' + f].play();
-
 	};
 
 	Enemy.prototype.revive = function () {
@@ -308,10 +475,23 @@
 
 		this.maxHealth = 30;
 		this.speed = 60;
-		this.shootDelay = 5000;
+		this.shootDelay = 3000;
 		this.bulletSpeed = 125;
 		this.points = 100;
 		this.lootProbability = 0.1;
+
+		this.shootConfig = {
+			bulletType: 0,
+			nBullets: 1, 
+			bulletDelay: 0, 
+			bulletAngle: 0, 
+			bulletSpread: 0, 
+
+			nShoots: 1, 
+			shootDelay: 0, 
+			shootAngle: -999, 
+			shootRotationSpeed: 0
+		};
 
 		this.planeClass = state.rnd.integerInRange(0, 7);
 
@@ -346,9 +526,22 @@
 
 		this.maxHealth = 100;
 		this.speed = 30;
-		this.shootDelay = 500;
+		this.shootDelay = 2000;
 		this.points = 500;
 		this.lootProbability = 0.5;
+
+		this.shootConfig = {
+			bulletType: 0,
+			nBullets: 5, 
+			bulletDelay: 0, 
+			bulletAngle: 0, 
+			bulletSpread: 0.2, 
+
+			nShoots: 1, 
+			shootDelay: 0, 
+			shootAngle: -999, 
+			shootRotationSpeed: 0
+		};
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -378,9 +571,23 @@
 
 		this.maxHealth = 750;
 		this.speed = 10;
-		this.shootDelay = 500;
+		this.shootDelay = 2000;
 		this.points = 2000;
 		this.lootProbability = 0.8;
+		this.bulletCancel = true;
+
+		this.shootConfig = {
+			bulletType: 1,
+			nBullets: 7, 
+			bulletDelay: 0, 
+			bulletAngle: 0, 
+			bulletSpread: 0.2, 
+
+			nShoots: 3, 
+			shootDelay: 500, 
+			shootAngle: 0, 
+			shootRotationSpeed: 0.2
+		};
 
 		this.animations.add('idle', [0], 5, true);
 		this.play('idle');
@@ -413,9 +620,22 @@
 		this.isPinnedToGround = true;
 		// this.groundType = 
 		this.bulletType = 1;
-		this.shootDelay = 2500;
-		this.points = 2000;
+		this.shootDelay = 5000;
+		this.points = 5000;
 		this.lootProbability = 0.5;
+
+		this.shootConfig = {
+			bulletType: 1,
+			nBullets: 6, 
+			bulletDelay: 0, 
+			bulletAngle: 0, 
+			bulletSpread: 0, 
+
+			nShoots: 3, 
+			shootDelay: 500, 
+			shootAngle: 0, 
+			shootRotationSpeed: 0.2
+		};
 
 		var preshoot = this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 15, false);
 
@@ -423,7 +643,8 @@
 		preshoot.onComplete.add(function (sprite) {
 
 			// Call the parent shoot function
-			Enemy.prototype.shoot.call(this);
+			Enemy.prototype.shoot.call(this, this.shootConfig);
+
 			sprite.play('shoot');
 		}, this);
 
@@ -1137,33 +1358,32 @@
 
 		createEnemies: function () {
 
-			var mob, i;
+			var mob, o, i;
 
 			// MOB BULLETS
 
 			this.bulletPoolsMob = [];
 
+			// Small bullets
 			this.bulletPoolsMob[0] = this.add.group();
-			this.bulletPoolsMob[0].enableBody = true;
-			this.bulletPoolsMob[0].physicsBodyType = Phaser.Physics.ARCADE;
-			this.bulletPoolsMob[0].createMultiple(100, 'mob_bullet_1');
-			this.bulletPoolsMob[0].setAll('anchor.x', 0.5);
-			this.bulletPoolsMob[0].setAll('anchor.y', 0.5);
-			this.bulletPoolsMob[0].setAll('scale.x', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[0].setAll('scale.y', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[0].setAll('outOfBoundsKill', true);
-			this.bulletPoolsMob[0].setAll('checkWorldBounds', true);
 
+			for (i = 0; i < 100; i++) {
+				o = new Bullet(this, 0);
+				this.bulletPoolsMob[0].add(o);
+				o.exists = false; 
+				o.alive = false;
+			}
+
+			// Mid bullets
 			this.bulletPoolsMob[1] = this.add.group();
-			this.bulletPoolsMob[1].enableBody = true;
-			this.bulletPoolsMob[1].physicsBodyType = Phaser.Physics.ARCADE;
-			this.bulletPoolsMob[1].createMultiple(100, 'mob_bullet_2');
-			this.bulletPoolsMob[1].setAll('anchor.x', 0.5);
-			this.bulletPoolsMob[1].setAll('anchor.y', 0.5);
-			this.bulletPoolsMob[1].setAll('scale.x', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[1].setAll('scale.y', CONFIG.PIXEL_RATIO);
-			this.bulletPoolsMob[1].setAll('outOfBoundsKill', true);
-			this.bulletPoolsMob[1].setAll('checkWorldBounds', true);
+
+			for (i = 0; i < 100; i++) {
+				o = new Bullet(this, 1);
+				this.bulletPoolsMob[1].add(o);
+				o.exists = false; 
+				o.alive = false;
+			}
+
 
 			// GROUND ENEMIES
 
@@ -1243,7 +1463,7 @@
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
 
-			this.enemyDelayGround[0] = 3000;
+			this.enemyDelayGround[0] = 5000;
 
 			this.nextEnemyGroundAt = this.time.now + this.enemyDelayGround.slice();
 		},
@@ -1317,7 +1537,7 @@
 
 		updateCloudSpawn: function () {
 
-			var cloud, i;
+			var cloud;
 
 			if (this.nextCloudAt < this.time.now && this.cloudPool.countDead() > 0) {
 
@@ -1567,8 +1787,8 @@
 
 				this.game.debug.text(
 					'ground.y : ' + Math.round(this.ground.y) + 'px | ' + 
-					this.mobPools[0].countLiving() + '/' + CONFIG.MOBPOOL_SIZE + ' mobs | ' +
-					(100 - this.bulletPoolsMob[0].countDead()) + ' mob bullets | ' +
+					this.mobPools[0].countLiving() + '+' + this.mobPools[1].countLiving() + '+' + this.mobPools[2].countLiving() + '+' + this.mobPoolsGround[0].countLiving() + ' mobs | ' +
+					this.bulletPoolsMob[0].countLiving() + '+' + this.bulletPoolsMob[0].countLiving() + ' mob bullets | ' +
 					(100 - this.player.bulletPool.countDead()) + ' bullets | '
 					, 
 					0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16);

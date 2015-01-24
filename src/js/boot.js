@@ -53,7 +53,7 @@ var CONFIG = {
 	}],
 
 	DEBUG: {
-		bottomInfos: 				false,
+		bottomInfos: 				true,
 		tileset: 						false,
 	},
 };
