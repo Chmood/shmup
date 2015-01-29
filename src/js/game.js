@@ -52,7 +52,7 @@
 		this.type = 0;
 
 		this.energy = 30;
-		this.speed = 100;
+		this.speed = 120;
 		this.shooter = undefined;
 
 		// this.checkWorldBounds = true;
@@ -94,7 +94,7 @@
 	/************************************************************************************************
 	 * SHOOT CLASS
 	 * 
-	 * One enemy shoot, firing one or several Bullets, all at once or one-by-one
+	 * One enemy shoot, firing one or several salve of one or several Bullets, all at once or one-by-one
 	 * 
 	 *
 	 ************************************************************************************************/
@@ -104,6 +104,7 @@
 		this.state = state;
 		this.game = state.game;
 
+		this.shooter = shooter;
 		this.shootConfig = shootConfig;
 
 		// this.nBulletsAlive = shootConfig.nBullets;
@@ -114,15 +115,9 @@
 
 		for (var j = 0; j < shootConfig.nShoots; j++) {
 
-			// bulletType: 1,
-			// nBullets: 7, 
 			// bulletDelay: 0, 
 			// bulletAngle: 0, 
-			// bulletSpread: 0, 
 
-			// nShoots: 3, 
-			// shootDelay: 500, 
-			// shootAngle: 0, 
 			// shootRotationSpeed: 0.2
 
 			this.t[j] = window.setTimeout((function(that, x) { return function() {	// Closure
@@ -130,8 +125,13 @@
 				var config = that.shootConfig;
 
 				var shootAngle;
+
 				if (config.shootAngle === 999) {	// Auto-aim player
-					
+
+					shootAngle = that.shooter.getAngleTo(that.state.player);
+// shootAngle = that.game.rnd.realInRange(0, 2 * Math.PI);
+					// console.log(shootAngle);
+
 				} else if (config.shootAngle === -999) {	// Random aim
 					shootAngle = that.game.rnd.realInRange(0, 2 * Math.PI);
 
@@ -140,6 +140,7 @@
 				}
 
 				var bulletAngleStep = 0;
+
 				if (config.nBullets > 1) {
 
 					if (config.bulletSpread === 0) { // This is the "auto-pan" at 360° special mode
@@ -215,7 +216,19 @@
 	Actor.prototype = Object.create(Spriter.prototype);
 	Actor.prototype.constructor = Actor;
 
+	Actor.prototype.getAngleTo = function (target) {
 
+		var angle;
+		if (target.x || target.y) {
+
+			angle = Math.atan2(target.x - this.x, target.y - this.y);
+			console.log(Math.round(angle * 180 / Math.PI) + ' / ' + angle);
+		}
+
+		return angle;
+	};
+
+	
 	/************************************************************************************************
 	 * COLLECTIBLE CLASS
 	 * 
@@ -285,7 +298,6 @@
 		this.tint = 0xffffff;
 
 		// this.speed = 160 * CONFIG.PIXEL_RATIO;
-
 	}
 
 	Mob.prototype = Object.create(Actor.prototype);
@@ -489,7 +501,7 @@
 
 			nShoots: 1, 
 			shootDelay: 0, 
-			shootAngle: -999, 
+			shootAngle: 999, 
 			shootRotationSpeed: 0
 		};
 
@@ -539,7 +551,7 @@
 
 			nShoots: 1, 
 			shootDelay: 0, 
-			shootAngle: -999, 
+			shootAngle: 999, 
 			shootRotationSpeed: 0
 		};
 
@@ -1455,9 +1467,9 @@
 			this.enemyDelay[1] = 5000;
 			this.enemyDelay[2] = 30000;
 
-			this.nextEnemyAt[0] = this.time.now + 1000;
-			this.nextEnemyAt[1] = this.time.now + 5000;
-			this.nextEnemyAt[2] = this.time.now + 30000;
+			this.nextEnemyAt[0] = this.time.now + this.enemyDelay[0];	// TODO in a loop
+			this.nextEnemyAt[1] = this.time.now + this.enemyDelay[1];
+			this.nextEnemyAt[2] = this.time.now + this.enemyDelay[2];
 
 
 			this.enemyDelayGround = [];
@@ -1465,7 +1477,7 @@
 
 			this.enemyDelayGround[0] = 5000;
 
-			this.nextEnemyGroundAt = this.time.now + this.enemyDelayGround.slice();
+			this.nextEnemyGroundAt[0] = this.time.now + this.enemyDelayGround[0];
 		},
 
 		createAudio: function () {
