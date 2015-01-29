@@ -124,13 +124,13 @@
 
 				var config = that.shootConfig;
 
+				// Shoot angle
+
 				var shootAngle;
 
 				if (config.shootAngle === 999) {	// Auto-aim player
 
 					shootAngle = that.shooter.getAngleTo(that.state.player);
-// shootAngle = that.game.rnd.realInRange(0, 2 * Math.PI);
-					// console.log(shootAngle);
 
 				} else if (config.shootAngle === -999) {	// Random aim
 					shootAngle = that.game.rnd.realInRange(0, 2 * Math.PI);
@@ -138,6 +138,12 @@
 				} else {
 					shootAngle = config.shootAngle;
 				}
+
+				// Shoot rotation speed
+
+				shootAngle += x * config.shootRotationSpeed;
+
+				// Bullets spread
 
 				var bulletAngleStep = 0;
 
@@ -151,11 +157,12 @@
 					}
 				}
 
-				x = x;
+				// One salve 
 
 				for (var i = 0; i < config.nBullets; i++) {
 
 					if (that.state.bulletPoolsMob[config.bulletType].countDead() > 0) {
+
 						that.bullets[i] = that.state.bulletPoolsMob[config.bulletType].getFirstExists(false);
 
 				// this.state.physics.arcade.moveToObject(bullet, this.state.player, this.bulletSpeed * CONFIG.PIXEL_RATIO);
@@ -167,6 +174,11 @@
 
 						} else {
 							angle = shootAngle + ((i - (config.nBullets - 1) / 2) * bulletAngleStep);
+						}
+
+						if (angle < 0 || angle >= 2 * Math.PI) {
+							angle = angle % (2 * Math.PI);
+
 						}
 
 						that.bullets[i].revive(shooter, angle);
@@ -401,7 +413,13 @@
 		Mob.prototype.update.call(this);
 
 		// Mob shoot
-		if (this.alive && this.state.player.alive && this.y < this.state.player.y - 100 * CONFIG.PIXEL_RATIO && this.state.time.now > this.nextShotAt && this.state.bulletPoolsMob[this.bulletType].countDead() > 0) {
+		if (this.alive && 	// Enemy is alive
+				this.state.player.alive && 	// Player is alive
+				this.y < this.state.player.y - 100 * CONFIG.PIXEL_RATIO && // Enemy above player
+
+				this.state.time.now > this.nextShotAt && 
+				this.state.bulletPoolsMob[this.bulletType].countDead() > 0
+				) {
 			this.shoot(this.shootConfig);
 		}
 	};
@@ -638,15 +656,15 @@
 
 		this.shootConfig = {
 			bulletType: 1,
-			nBullets: 6, 
+			nBullets: 4, 
 			bulletDelay: 0, 
 			bulletAngle: 0, 
 			bulletSpread: 0, 
 
 			nShoots: 3, 
-			shootDelay: 500, 
+			shootDelay: 50, 
 			shootAngle: 0, 
-			shootRotationSpeed: 0.2
+			shootRotationSpeed: 0.1
 		};
 
 		var preshoot = this.animations.add('pre-shoot', [0, 1, 2, 3, 4, 5, 6, 7, 8], 15, false);
@@ -1379,7 +1397,7 @@
 			// Small bullets
 			this.bulletPoolsMob[0] = this.add.group();
 
-			for (i = 0; i < 100; i++) {
+			for (i = 0; i < CONFIG.BULLETPOOL_SIZE_ENNEMY; i++) {
 				o = new Bullet(this, 0);
 				this.bulletPoolsMob[0].add(o);
 				o.exists = false; 
@@ -1389,7 +1407,7 @@
 			// Mid bullets
 			this.bulletPoolsMob[1] = this.add.group();
 
-			for (i = 0; i < 100; i++) {
+			for (i = 0; i < CONFIG.BULLETPOOL_SIZE_ENNEMY; i++) {
 				o = new Bullet(this, 1);
 				this.bulletPoolsMob[1].add(o);
 				o.exists = false; 
@@ -1467,10 +1485,13 @@
 			this.enemyDelay[1] = 5000;
 			this.enemyDelay[2] = 30000;
 
+			// this.enemyDelay[0] = 100000;
+			// this.enemyDelay[1] = 500000;
+			// this.enemyDelay[2] = 3000000;
+
 			this.nextEnemyAt[0] = this.time.now + this.enemyDelay[0];	// TODO in a loop
 			this.nextEnemyAt[1] = this.time.now + this.enemyDelay[1];
 			this.nextEnemyAt[2] = this.time.now + this.enemyDelay[2];
-
 
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
@@ -1800,7 +1821,7 @@
 				this.game.debug.text(
 					'ground.y : ' + Math.round(this.ground.y) + 'px | ' + 
 					this.mobPools[0].countLiving() + '+' + this.mobPools[1].countLiving() + '+' + this.mobPools[2].countLiving() + '+' + this.mobPoolsGround[0].countLiving() + ' mobs | ' +
-					this.bulletPoolsMob[0].countLiving() + '+' + this.bulletPoolsMob[0].countLiving() + ' mob bullets | ' +
+					this.bulletPoolsMob[0].countLiving() + '+' + this.bulletPoolsMob[1].countLiving() + ' mob bullets | ' +
 					(100 - this.player.bulletPool.countDead()) + ' bullets | '
 					, 
 					0, CONFIG.GAME_HEIGHT * CONFIG.PIXEL_RATIO - 16);
