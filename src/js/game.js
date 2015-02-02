@@ -1116,6 +1116,8 @@
 			// PLAYER
 
 			this.player = new Player(this);
+			this.score = 0;
+
 			this.game.camera.follow(this.player, Phaser.Camera.FOLLOW_PLATFORMER);
 			
 			// USER ACTIONS

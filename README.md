@@ -3,7 +3,7 @@ A shooter game based on Phaser framework
 
 ## CONCEPT
 
-__RPG rogue-like shoot'em up__
+__RPG rogue-like retro shoot'em up__
 
 ## FEATURES
 
@@ -12,8 +12,8 @@ __RPG rogue-like shoot'em up__
 
 ## TODO'S
 
-* rich player shoot patterns (multiple streams, lateral pods, auto-aiming streams, homing missiles)
 * death / replay sequences
+* rich player shoot patterns (multiple streams, lateral pods, auto-aiming streams, homing missiles)
 * proportional upgrades (and level ups)
 
 ## KNOWN BUGS
