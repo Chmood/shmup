@@ -234,7 +234,6 @@
 		if (target.x || target.y) {
 
 			angle = Math.atan2(target.x - this.x, target.y - this.y);
-			console.log(Math.round(angle * 180 / Math.PI) + ' / ' + angle);
 		}
 
 		return angle;
@@ -633,7 +632,7 @@
 	};
 
 
-/************************************************************************************************
+	/************************************************************************************************
 	 * TURRET CLASS
 	 * 
 	 * A specific type of (ground) Enemy
@@ -723,7 +722,7 @@
 	};
 
 
-/************************************************************************************************
+	/************************************************************************************************
 	 * CLOUD CLASS
 	 * 
 	 * A specific type of (ground) Enemy
@@ -772,6 +771,7 @@
 		// Call the parent revive function
 		Mob.prototype.revive.call(this);
 	};
+
 
 	/************************************************************************************************
 	 * PLAYER CLASS
@@ -869,27 +869,45 @@
 		var cursors = this.state.cursors;
 		var keyboard = this.state.input.keyboard;
 
-		var delta = (this.game.time.now - this.lastUpdate) / 1000; //in seconds
-		this.lastUpdate = this.game.time.now;
+		if (this.state.gameState === 0) {	// Pre-play
 
-		if (cursors.left.isDown && this.x > 20 * CONFIG.PIXEL_RATIO) {
-			this.moveLeft(delta);
-		} else if (cursors.right.isDown && this.x < (CONFIG.WORLD_WIDTH * 24 - 20) * CONFIG.PIXEL_RATIO) {
-			this.moveRight(delta);
-		} else {
-			this.floatH(delta);
-		}
+			if (keyboard.isDown(Phaser.Keyboard.W)) {
+				this.state.statePreplay2Play();
+			}
 
-		if (cursors.up.isDown && this.y > 30 * CONFIG.PIXEL_RATIO) {
-			this.moveUp(delta);
-		} else if (cursors.down.isDown && this.y < (CONFIG.GAME_HEIGHT - 20) * CONFIG.PIXEL_RATIO) {
-			this.moveDown(delta);
-		} else {
-			this.floatV(delta);
-		}
+		} else if (this.state.gameState === 2) {	// Post-play (game over)
 
-		if (keyboard.isDown(Phaser.Keyboard.W)) {
-			this.fire();
+			if (keyboard.isDown(Phaser.Keyboard.W)) {
+				this.game.state.start('menu');
+			}
+
+		} else { // Play
+			var delta = (this.game.time.now - this.lastUpdate) / 1000; //in seconds
+			this.lastUpdate = this.game.time.now;
+
+			// Move
+
+			if (cursors.left.isDown && this.x > 20 * CONFIG.PIXEL_RATIO) {
+				this.moveLeft(delta);
+			} else if (cursors.right.isDown && this.x < (CONFIG.WORLD_WIDTH * 24 - 20) * CONFIG.PIXEL_RATIO) {
+				this.moveRight(delta);
+			} else {
+				this.floatH(delta);
+			}
+
+			if (cursors.up.isDown && this.y > 30 * CONFIG.PIXEL_RATIO) {
+				this.moveUp(delta);
+			} else if (cursors.down.isDown && this.y < (CONFIG.GAME_HEIGHT - 20) * CONFIG.PIXEL_RATIO) {
+				this.moveDown(delta);
+			} else {
+				this.floatV(delta);
+			}
+
+			// Fire
+
+			if (keyboard.isDown(Phaser.Keyboard.W)) {
+				this.fire();
+			}
 		}
 	};
 
@@ -1072,11 +1090,21 @@
 		this.player = null;
 		this.lastUpdate = 0;
 		this.delta = 0;
+
+		this.STATE = {
+			preplay:  0,	// no enemy
+			play: 		1,
+			postplay: 2 	// no player
+		};
+
+		this.gameState = null;
 	}
 
 	Game.prototype = {
 
 		create: function () {
+
+			this.gameState = this.STATE.preplay;
 
 			this.createWorld();
 			this.createGround();
@@ -1125,7 +1153,21 @@
 			this.input.onDown.add(this.onInputDown, this);
 			this.cursors = this.input.keyboard.createCursorKeys();
 
+			this.createGUI();
+
+			// AUDIO
+
+			this.createAudio();
+		},
+
+		createGUI: function () {
 			// GUI
+
+			this.guiText0 = this.add.bitmapText(0, 0, 'minecraftia', 'Get ready');
+			this.guiText0.scale.setTo(CONFIG.PIXEL_RATIO, CONFIG.PIXEL_RATIO); 
+			this.guiText0.x = (this.game.width - this.guiText0.textWidth * CONFIG.PIXEL_RATIO) / 2;
+			this.guiText0.y = (this.game.height- this.guiText0.textHeight * CONFIG.PIXEL_RATIO) / 2;
+			this.guiText0.fixedToCamera = true;
 
 			this.guiText1 = this.add.bitmapText(0, -5 * CONFIG.PIXEL_RATIO, 'minecraftia', '');
 			this.guiText1.scale.setTo(CONFIG.PIXEL_RATIO / 2, CONFIG.PIXEL_RATIO / 2); 
@@ -1136,10 +1178,6 @@
 			this.guiText2.fixedToCamera = true;
 
 			this.updateGUI();
-
-			// AUDIO
-
-			this.createAudio();
 		},
 
 		createWorld: function () {
@@ -1491,16 +1529,10 @@
 			// this.enemyDelay[1] = 500000;
 			// this.enemyDelay[2] = 3000000;
 
-			this.nextEnemyAt[0] = this.time.now + this.enemyDelay[0];	// TODO in a loop
-			this.nextEnemyAt[1] = this.time.now + this.enemyDelay[1];
-			this.nextEnemyAt[2] = this.time.now + this.enemyDelay[2];
-
 			this.enemyDelayGround = [];
 			this.nextEnemyGroundAt = [];
 
 			this.enemyDelayGround[0] = 5000;
-
-			this.nextEnemyGroundAt[0] = this.time.now + this.enemyDelayGround[0];
 		},
 
 		createAudio: function () {
@@ -1525,19 +1557,43 @@
     	// this.sound['shoot_player'].allowMultiple = true;
 		},
 
+		statePreplay2Play: function () {
+
+			this.gameState = this.STATE.play;
+
+			// Reset enemy next spawn
+
+			this.nextEnemyAt[0] = this.time.now + this.enemyDelay[0];	// TODO in a loop
+			this.nextEnemyAt[1] = this.time.now + this.enemyDelay[1];
+			this.nextEnemyAt[2] = this.time.now + this.enemyDelay[2];
+
+			this.nextEnemyGroundAt[0] = this.time.now + this.enemyDelayGround[0];
+
+			this.guiText0.setText('');
+		},
+
+		statePlay2Postplay: function () {
+
+			this.gameState = this.STATE.postplay;
+
+			this.guiText0.setText('Game over');
+		},
+
 		update: function () {
 
 			this.delta = (this.game.time.now - this.lastUpdate) / 1000; //in seconds
 			this.lastUpdate = this.game.time.now;
 
-			// Enemy spawn
-			this.updateEnemySpawn();
-
-			// Cloud spawn
-			// this.updateCloudSpawn();
+			if (this.gameState !== this.STATE.preplay) {
+				// Enemy spawn
+				this.updateEnemySpawn();
+			}
 
 			// Collisions
 			this.updateCollisions();
+
+			// Cloud spawn
+			// this.updateCloudSpawn();
 
 			// Background
 			this.updateBackground(this.delta);
@@ -1556,30 +1612,6 @@
 					enemy = this.mobPools[i].getFirstExists(false);
 					enemy.revive();
 				}
-			}
-
-			// for (i = 0; i < this.mobPoolsGround.length; i++) {
-
-			// 	if (this.nextEnemyGroundAt[i] < this.time.now && this.mobPoolsGround[i].countDead() > 0) {
-
-			// 		this.nextEnemyGroundAt[i] = this.time.now + this.enemyDelayGround[i];
-
-			// 		enemy = this.mobPoolsGround[i].getFirstExists(false);
-			// 		enemy.revive();
-			// 	}
-			// }
-		},
-
-		updateCloudSpawn: function () {
-
-			var cloud;
-
-			if (this.nextCloudAt < this.time.now && this.cloudPool.countDead() > 0) {
-
-				this.nextCloudAt = this.time.now + this.cloudDelay;
-
-				cloud = this.cloudPool.getFirstExists(false);
-				cloud.revive();
 			}
 		},
 
@@ -1638,6 +1670,19 @@
 			}
 		},
 
+		updateCloudSpawn: function () {
+
+			var cloud;
+
+			if (this.nextCloudAt < this.time.now && this.cloudPool.countDead() > 0) {
+
+				this.nextCloudAt = this.time.now + this.cloudDelay;
+
+				cloud = this.cloudPool.getFirstExists(false);
+				cloud.revive();
+			}
+		},
+
 		updateCollisions: function () {
 
 			var i;
@@ -1682,34 +1727,24 @@
 			}
 		},
 
-
 		playerVSmob: function (player, mob) {
 
-			player.takeDamage(20);
 			mob.kill();
 			this.explode(mob);
-			// this.sound['explosion_1'].play();
 
-			this.updateGUI();
-
-			if (player.health <= 0) {
-				player.kill();
-				player.alive = false;
-				this.explode(player);
-
-				this.sound['explosion_3'].play();
-
-			} else {
-
-				this.sound['hurt_1'].play();
-			}
+			this.playerVSenemy(player);
 		},
 
 		playerVSbullet: function (player, bullet) {
 
-			player.takeDamage(20);
 			bullet.kill();
-			this.updateGUI();
+
+			this.playerVSenemy(player);
+		},
+
+		playerVSenemy: function (player) {
+
+			player.takeDamage(20);
 
 			if (player.health <= 0) {
 				player.kill();
@@ -1718,9 +1753,13 @@
 
 				this.sound['explosion_3'].play();
 
+				this.statePlay2Postplay();
+
 			} else {
 				this.sound['hurt_1'].play();
 			}
+
+			this.updateGUI();
 		},
 
 		playerVSbonus: function (player, bonus) {
@@ -1739,7 +1778,7 @@
 			explosion.play('boom', 15, false, true);			
 		},
 
-
+	
 		// MISC
 
 		updateGUI: function () {
@@ -1785,7 +1824,10 @@
 				}
 
 				this.drawGround();
-				this.updateEnemySpawnGround();
+
+				if (this.gameState !== this.STATE.preplay) {
+					this.updateEnemySpawnGround();
+				}
 
 				this.ground.y = - this.scrollMax;
 			}
