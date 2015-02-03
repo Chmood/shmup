@@ -1,4 +1,5 @@
 /*globals*/
+/*jshint -W083 */
 
 (function() {
 	'use strict';
