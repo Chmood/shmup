@@ -62,6 +62,16 @@
 
       // this.load.binary('music_1', 'assets/audio/mod/4-track_from_heaven.mod');
       // this.load.audio('music_1', 'assets/audio/music_1.wav');
+
+      // Scripts
+
+      // /!\ PROBLEM /!\
+      // loading scripts this way seems to defer them after the execution of game.js
+      // leading to undefined things
+      // For now, using raw <scripts> tags in index.html
+      // (could be related to gulp pipeline)
+
+      // this.load.script('spriter.js', 'js/class/spriter.js');
     },
 
     create: function () {

@@ -2,17 +2,12 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>firsttry</title>
+  <title>Phaser SHMUP</title>
 
   <!-- build:css main.min.css -->
   <link rel="stylesheet" href="css/main.css"> 
+
   <!-- /build -->
-</head>
-
-<body>
-  
-  <div id="firsttry-game" class="game"></div>
-
   <!-- build:remove -->
   <script src="http://localhost:35729/livereload.js"></script>  
   <!-- /build -->
@@ -23,9 +18,31 @@
   <script src="js/boot.js"></script>
   <script src="js/preloader.js"></script>
   <script src="js/menu.js"></script>
+
+  <script src="js/class/spriter.js"></script>
+  <script src="js/class/actor.js"></script>
+  <script src="js/class/mob.js"></script>
+
+  <script src="js/class/shoot.js"></script>
+  <script src="js/class/enemy.js"></script>
+  <script src="js/class/flying_mobs.js"></script>
+  <script src="js/class/turret.js"></script>
+
+  <script src="js/class/player.js"></script>
+
+  <script src="js/class/bullet.js"></script>
+  <script src="js/class/collectible.js"></script>
+  <script src="js/class/cloud.js"></script>
+
   <script src="js/game.js"></script>
   <script src="js/main.js"></script>
   <!-- /build -->
+
+</head>
+
+<body>
+  
+  <div id="firsttry-game" class="game"></div>
 
 </body>
 </html>
