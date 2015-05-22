@@ -63,7 +63,8 @@ gulp.task('uglify', ['clean','lint'], function () {
 		.pipe(concat('main.min.js'))
 		.pipe(sourcemaps.write())
 		.pipe(uglify({outSourceMaps: true}))
-		.pipe(gulp.dest(paths.dist));
+		.pipe(gulp.dest(paths.dist))
+		.on('error', gutil.log);
 });
 
 gulp.task('minifycss', ['clean'], function () {

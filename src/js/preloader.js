@@ -80,7 +80,7 @@
 
     update: function () {
       if (!!this.ready) {
-        this.game.state.start('game');
+        this.game.state.start('menu');
       }
     },
 

@@ -669,7 +669,7 @@
 
 		playerVSenemy: function (player) {
 
-			player.takeDamage(20);
+			player.takeDamage(10); 
 
 			if (player.health <= 0) {
 				player.kill();

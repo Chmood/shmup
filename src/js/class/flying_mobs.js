@@ -113,7 +113,7 @@
 
 		this.maxHealth = 750;
 		this.speed = 10;
-		this.shootDelay = 2000;
+		this.shootDelay = 3000;
 		this.points = 2000;
 		this.lootProbability = 0.8;
 		this.bulletCancel = true;
