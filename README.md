@@ -1,6 +1,8 @@
 # shmup
 A shooter game based on Phaser framework
 
+[PLAY IT! >](http://chmood.github.io/shmup/dist/)
+
 ## CONCEPT
 
 __RPG rogue-like retro shoot'em up__
